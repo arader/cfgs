@@ -2,6 +2,7 @@
 
 cfg1="tmux.conf,$HOME/.tmux.conf"
 cfg2="profile,$HOME/.profile"
+cfg3="vimrc,$HOME/.vimrc"
 
 install()
 {
