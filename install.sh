@@ -3,6 +3,8 @@
 cfg1="tmux.conf,$HOME/.tmux.conf"
 cfg2="profile,$HOME/.profile"
 cfg3="vimrc,$HOME/.vimrc"
+cfg4="irssi/config,$HOME/.irssi/config"
+cfg5="irssi/fired.theme,$HOME/.irssi/fired.theme"
 
 install()
 {
