@@ -1,4 +1,4 @@
-# HELLFIRE theme for irssi
+# fired theme for irssi, based off of HELLFIRE
 # by Anzuhan <anzuhan@ihme.org> Anzuhan@IRCNet @QuakeNet @IhmeNet 
 
 replaces = { "=" = "%w$0-%n"; };
@@ -36,7 +36,7 @@ abstracts = {
   comment = "%W$0-";
 
   # reason for something is printed (part, quit, kick, ..)
-  reason = "%r[%n{comment $0-}%r]%n";
+  reason = "%K[$0-]%n";
 
   # mode change is printed ([+o nick])
   mode = "%W$0-%n";
@@ -88,7 +88,7 @@ abstracts = {
 
   # public message in channel, $0 = nick mode, $1 = nick
   pubmsgnick = "{msgnick $0 $1}%n";
-  pubnick = "%w$0$1%n";
+  pubnick = "%W$0%R$1%n";
 
   # public message in channel meant for me, $0 = nick mode, $1 = nick
   pubmsgmenick = "{msgnick %_$0%_ $1}%W";
@@ -193,7 +193,7 @@ abstracts = {
   sb = "[%n$0-%n] ";
 
   # background for topicbar (same default)
-  sb_topic_bg = "%W";
+  sb_topic_bg = "%R";
 
   # text at the beginning of statusbars. sb-item already puts
   # space there,so we don't use anything by default.
@@ -219,10 +219,10 @@ abstracts = {
 
 formats = {
   "fe-common/core" = {
-    join = "{channick_hilight $0} %r(%W$1%r) %Rjoins%n %Y$2%n";
-    part = "{channick_hilight $0} %r(%W$1%r) %Rparts%n %Y$2%n {reason $3}";
-    kick = "{channick_hilight $0} was %Wkicked%n from {channel $1} by {nick $2} {reason $3}";
-    quit = "{channick_hilight $0} %r(%W$1%r) %Rquits%n {reason $2}";
+    join = "%rjoin %W- $0 %K($1)%n";
+    part = "%rpart %W- $0 %K($1) {reason $3}%n";
+    kick = "%W$0 %Kwas %rkicked%K from {channel $1} by {nick $2} {reason $3}";
+    quit = "%rquit %W- $0 %K($1) {reason $2}%n";
     endofnames = "%Y$0%W: %Y$1 %nnicks%n %r(%Wops: %R$2%n %Wvoices: %R$3%n %Wregular: %R$5%r)";
   };
   "fe-common/irc" = {

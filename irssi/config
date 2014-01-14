@@ -275,5 +275,5 @@ statusbar = {
 settings = {
   core = { real_name = "andrew"; user_name = "andrew"; nick = "arader"; };
   "fe-text" = { actlist_sort = "refnum"; };
-  "fe-common/core" = { theme = "hellfire"; };
+  "fe-common/core" = { theme = "fired"; };
 };
