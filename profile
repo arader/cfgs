@@ -7,7 +7,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$HOME/bin; exp
 
 BLOCKSIZE=K;	export BLOCKSIZE
 EDITOR=vi;   	export EDITOR
-PAGER=more;  	export PAGER
+PAGER=less;  	export PAGER
+GIT_PAGER=less  export GIT_PAGER
 
 # set ENV to a file invoked each time sh is started for interactive use.
 ENV=$HOME/.shrc; export ENV
