@@ -5,9 +5,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$HOME/bin; exp
 # serial line.
 # TERM=xterm; 	export TERM
 
-BLOCKSIZE=K;	export BLOCKSIZE
-EDITOR=vi;   	export EDITOR
-PAGER=less;  	export PAGER
+BLOCKSIZE=K;    export BLOCKSIZE
+EDITOR=vim;     export EDITOR
+PAGER=less;     export PAGER
 GIT_PAGER=less  export GIT_PAGER
 
 # set ENV to a file invoked each time sh is started for interactive use.
