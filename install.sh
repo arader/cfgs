@@ -5,12 +5,15 @@ cfg2="profile,$HOME/.profile"
 cfg3="vimrc,$HOME/.vimrc"
 cfg4="irssi/config,$HOME/.irssi/config"
 cfg5="irssi/fired.theme,$HOME/.irssi/fired.theme"
+cfg6="scripts/tmux/dot.sh,$HOME/scripts/tmux/dot.sh"
+cfg7="scripts/tmux/notifications.sh,$HOME/scripts/tmux/notifications.sh"
 
 install()
 {
     path=$(dirname `readlink -f $0`)
     file="$1"
     dest="$2"
+    destdir=$(dirname "$dest")
 
     echo -n "installing $file in $dest... "
 
@@ -22,6 +25,7 @@ install()
         echo
     fi
 
+    mkdir -p $destdir
     ln -s -f $path/$file $dest
 }
 
