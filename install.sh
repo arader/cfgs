@@ -1,12 +1,13 @@
 #!/bin/sh
 
-cfg1="tmux.conf,$HOME/.tmux.conf"
-cfg2="profile,$HOME/.profile"
-cfg3="vimrc,$HOME/.vimrc"
-cfg4="irssi/config,$HOME/.irssi/config"
-cfg5="irssi/fired.theme,$HOME/.irssi/fired.theme"
-cfg6="scripts/tmux/dot.sh,$HOME/scripts/tmux/dot.sh"
-cfg7="scripts/tmux/notifications.sh,$HOME/scripts/tmux/notifications.sh"
+cfg1="zshrc,$HOME/.zshrc"
+cfg2="tmux.conf,$HOME/.tmux.conf"
+cfg3="profile,$HOME/.profile"
+cfg4="vimrc,$HOME/.vimrc"
+cfg5="irssi/config,$HOME/.irssi/config"
+cfg6="irssi/fired.theme,$HOME/.irssi/fired.theme"
+cfg7="scripts/tmux/dot.sh,$HOME/scripts/tmux/dot.sh"
+cfg8="scripts/tmux/notifications.sh,$HOME/scripts/tmux/notifications.sh"
 
 install()
 {
