@@ -10,8 +10,19 @@ zstyle :compinstall filename '/home/andrew/.zshrc'
 autoload -Uz compinit
 compinit
 # End of lines added by compinstall
+
+#
+# prompt
+#
 autoload -U colors
 colors
 PROMPT="%{$fg_bold[black]%}%d
 %{$fg_bold[black]%}[%{$fg_no_bold[red]%}%!%(?.. %{$fg_bold[red]%}(%?%))%{$fg_bold[black]%}] %{$fg_bold[black]%}%(1j.%%.)%# %{$reset_color%}"
 RPROMPT=""
+
+#
+# aliases
+#
+alias bt=transmission-remote
+alias j=jobs
+alias ll='ls -laFo'
