@@ -27,5 +27,4 @@ RPROMPT=""
 alias bt=transmission-remote
 alias btc=bitcoin-cli
 alias j=jobs
-alias irssi='irssi --hostname="0x666.tk"'
 alias ll='ls -laFo'
