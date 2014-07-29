@@ -1,5 +1,11 @@
 set nocompatible
 
+" set the file encoding order
+set fencs=ucs-bom,utf-8,default,latin1,ucs-2le
+
+" allow modified buffers to be kept off screen
+set hidden
+
 " allow backups over everything
 set backspace=indent,eol,start
 
@@ -12,21 +18,47 @@ set incsearch
 " enable highlighting of search text
 set hlsearch
 
+" show line numbers
+set number
+
+" when starting a new line, copy the indent of the previous line
 set autoindent
+
+" uses spaces for <TAB> key
 set expandtab
+
+" tabs should be 4 spaces long
 set ts=4
+
+" the number of chars to shift lines for indenting
 set shiftwidth=4
-set nu
-set fencs=ucs-bom,utf-8,default,latin1,ucs-2le
 
-set wrap!
+" turn off word wrapping
+set nowrap
 
+" keep track of 150 commands
+set history=150
+
+" get rid of swp files
 set nobackup
 set nowritebackup
 
+" map F11 to a 'go to fullscreen mode' shortcut
 map <F11> :simalt~x<CR>
 
-"set foldmethod=syntax
+" set up the Vundle Plugins
+filetype off
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+" let Vundle manage Vundle, required
+Plugin 'gmarik/Vundle.vim'
+
+" All of your Plugins must be added before the following line
+call vundle#end()
+
+" enable filetype detection and do lang-based indenting
+filetype plugin indent on
 
 if has("gui_running")
     set mousehide
