@@ -29,4 +29,4 @@ then
     color="#[fg=#d33682]"
 fi
 
-echo -n "$bracket_color┌ $color$temp_avg$unit_color°C $bracket_color┐"
+echo -n "$bracket_color┌ $color$temp_avg$unit_color° $bracket_color┐"

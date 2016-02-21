@@ -33,9 +33,10 @@ servers = (
   {
     address = "irc.freenode.net";
     chatnet = "freenode";
-    port = "6667";
-    use_ssl = "no";
-    ssl_verify = "no";
+    port = "6697";
+    use_ssl = "yes";
+    ssl_verify = "yes";
+    ssl_cafile = "/usr/local/share/certs/ca-root-nss.crt";
     family = "inet6";
     autoconnect = "yes";
   }
@@ -278,8 +279,22 @@ settings = {
     real_name = "andrew";
     user_name = "andrew";
     nick = "arader";
-    hostname = "0x666.tk";
+    # hostname = "0x666.tk";
   };
   "fe-text" = { actlist_sort = "refnum"; };
-  "fe-common/core" = { theme = "fired"; };
+  "fe-common/core" = {
+    theme = "solarized-universal";
+    hilight_color = "= %R";
+  };
+};
+hilights = (
+        { text = "arader"; color = "%M"; nick = "yes"; word = "yes"; }
+);
+statusbar = {
+    items = {
+        # Solarized
+        lag = "{sb Lag: %m$0-%n}";
+        act = "{sb Act: $0-}";
+        more = "%k%3-- more --%n";
+    };
 };
