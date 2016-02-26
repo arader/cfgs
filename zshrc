@@ -27,7 +27,7 @@ fi
 autoload -U colors
 colors
 
-PROMPT="%n@%m:%d%(1j. [%{$fg_bold[red]%}%j%{$reset_color%}].)%(?.. (%{$fg_bold[red]%}%?%{$reset_color%}%))
+PROMPT="%n@%{$fg_bold[red]%}%m%{$reset_color%}:%~%(1j. [%{$fg_bold[red]%}%j%{$reset_color%}].)%(?.. (%{$fg_bold[red]%}%?%{$reset_color%}%))
 %(?..%{$fg_bold[red]%})%(!.>>.>) %{$reset_color%}"
 RPROMPT=""
 
@@ -48,6 +48,10 @@ bindkey "^[[A" up-line-or-beginning-search # Up
 bindkey "^[[B" down-line-or-beginning-search # Dow
 
 bindkey '\e.' insert-last-word
+
+# auto-escape shell characters such as '&' and '!'
+autoload -U url-quote-magic
+zle -N self-insert url-quote-magic
 
 #
 # aliases
