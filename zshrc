@@ -41,8 +41,8 @@ autoload -Uz vcs_info
 zstyle ':vcs_info:*' enable git
 zstyle ':vcs_info:git:*' check-for-changes true
 zstyle :'vcs_info:git:*' get-revision true
-zstyle ':vcs_info:git:*' stagedstr '%F{47} ○'
-zstyle ':vcs_info:git:*' unstagedstr '%F{220} ○'
+zstyle ':vcs_info:git:*' stagedstr '%F{47} ●'
+zstyle ':vcs_info:git:*' unstagedstr '%F{220} ●'
 #zstyle ':vcs_info:*' nvcsformats 'non-git '
 zstyle ':vcs_info:git:*' formats '%r/%S %F{cyan}%b%F{white}@%F{blue}%8.8i%m%u%c'
 zstyle ':vcs_info:git*+set-message:*' hooks git-untracked
@@ -56,7 +56,7 @@ function +vi-git-untracked(){
         # If instead you want to show the marker only if there are untracked
         # files in $PWD, use:
         #[[ -n $(git ls-files --others --exclude-standard) ]] ; then
-        hook_com[unstaged]+='%F{160} ○'
+        hook_com[unstaged]+='%F{160} ●'
     fi
 }
 
