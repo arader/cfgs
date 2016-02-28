@@ -24,13 +24,41 @@ fi
 autoload -U colors
 colors
 
+# For my own and others sanity
+# git:
+# %b => current branch
+# %a => current action (rebase/merge)
+# prompt:
+# %F => color dict
+# %f => reset color
+# %~ => current path
+# %* => time
+# %n => username
+# %m => shortname host
+# %(?..) => prompt conditional - %(condition.true.false)
+
 autoload -Uz vcs_info
 zstyle ':vcs_info:*' enable git
 zstyle ':vcs_info:git:*' check-for-changes true
-zstyle ':vcs_info:git:*' stagedstr "$fg[green]S"
-zstyle ':vcs_info:git:*' unstagedstr "$fg[yellow]U"
+zstyle :'vcs_info:git:*' get-revision true
+zstyle ':vcs_info:git:*' stagedstr '%F{green}±'
+zstyle ':vcs_info:git:*' unstagedstr '%F{yellow}±'
 #zstyle ':vcs_info:*' nvcsformats 'non-git '
-zstyle ':vcs_info:git:*' formats "%r/%S %b %m%u%c "
+zstyle ':vcs_info:git:*' formats '%r/%S %F{cyan}%b%F{white}@%F{blue}%8.8i %m%u%c'
+zstyle ':vcs_info:git*+set-message:*' hooks git-untracked
+
+### git: Show marker (T) if there are untracked files in repository
+# Make sure you have added staged to your 'formats':  %c
+function +vi-git-untracked(){
+    if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' ]] && \
+        git status --porcelain | fgrep '??' &> /dev/null ; then
+        # This will show the marker if there are any untracked files in repo.
+        # If instead you want to show the marker only if there are untracked
+        # files in $PWD, use:
+        #[[ -n $(git ls-files --others --exclude-standard) ]] ; then
+        hook_com[unstaged]+='%F{red}±'
+    fi
+}
 
 setopt prompt_subst
 
@@ -38,9 +66,9 @@ precmd() {
     vcs_info
     local prefix
 
-    prefix="%n@%{$fg[red]%}%m%{$reset_color%}:"
-    suffix="%{$reset_color%}%(1j. [%{$fg[red]%}%j%{$reset_color%}].)%(?.. (%{$fg[red]%}%?%{$reset_color%}%))
-%(?..%{$fg[red]%})%(!.>>.>) %{$reset_color%}"
+    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:%F{yellow}"
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
+%(?.%F{green}.%F{red})%(!.❯❯.❯)%f "
 
     if [[ -n ${vcs_info_msg_0_} ]]
     then
