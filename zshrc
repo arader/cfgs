@@ -21,14 +21,34 @@ then
     done
 fi
 
-#
-# prompt
-#
 autoload -U colors
 colors
 
-PROMPT="%n@%{$fg_bold[red]%}%m%{$reset_color%}:%~%(1j. [%{$fg_bold[red]%}%j%{$reset_color%}].)%(?.. (%{$fg_bold[red]%}%?%{$reset_color%}%))
-%(?..%{$fg_bold[red]%})%(!.>>.>) %{$reset_color%}"
+autoload -Uz vcs_info
+zstyle ':vcs_info:*' enable git
+zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' stagedstr "$fg[green]S"
+zstyle ':vcs_info:git:*' unstagedstr "$fg[yellow]U"
+#zstyle ':vcs_info:*' nvcsformats 'non-git '
+zstyle ':vcs_info:git:*' formats "%r/%S %b %m%u%c "
+
+setopt prompt_subst
+
+precmd() {
+    vcs_info
+    local prefix
+
+    prefix="%n@%{$fg[red]%}%m%{$reset_color%}:"
+    suffix="%{$reset_color%}%(1j. [%{$fg[red]%}%j%{$reset_color%}].)%(?.. (%{$fg[red]%}%?%{$reset_color%}%))
+%(?..%{$fg[red]%})%(!.>>.>) %{$reset_color%}"
+
+    if [[ -n ${vcs_info_msg_0_} ]]
+    then
+        PROMPT="$prefix${vcs_info_msg_0_}$suffix"
+    else
+        PROMPT="$prefix%~$suffix"
+    fi
+}
 RPROMPT=""
 
 function zle-line-init zle-keymap-select {
