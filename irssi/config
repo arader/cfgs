@@ -37,7 +37,7 @@ servers = (
     use_ssl = "yes";
     ssl_verify = "yes";
     ssl_cafile = "/usr/local/share/certs/ca-root-nss.crt";
-    family = "inet6";
+    #family = "inet6";
     autoconnect = "yes";
   }
 );
