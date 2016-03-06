@@ -63,6 +63,7 @@ call vundle#end()
 " enable filetype detection and do lang-based indenting
 filetype plugin indent on
 
+syntax on
 set background=dark
 colorscheme solarized
 
@@ -98,8 +99,3 @@ function MyDiff()
   endif
   silent execute '!' . cmd . ' ' . opt . arg1 . ' ' . arg2 . ' > ' . arg3 . eq
 endfunction
-
-" set up our theme
-
-syntax on
-syntax reset
