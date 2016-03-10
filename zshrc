@@ -1,7 +1,36 @@
-HISTFILE=~/.histfile
-HISTSIZE=100000
-SAVEHIST=100000
-setopt hist_ignore_all_dups hist_ignore_space
+# Store the current hostname or 'unknown' if we can't
+# get one for some crazy reason
+HOSTNAME=$(hostname | tr '[:upper:]' '[:lower:]')
+: ${HOSTNAME:=unknown}
+
+# Keep history files separated by year and month
+# This will save the file in a '20XX.YY.history' file, the
+# PREVDATE command has some shenanigans in it to properly
+# handle getting the previous month when 'today' happens
+# to fall on a day that doesn't exist in the previous month.
+# For example, Oct 31st - 1m would still be Oct, since
+# Sept 31st doesn't exist.
+CURRDATE=$(date -j +%Y.%m)
+PREVDATE=$(date -j -v -1m -f %Y.%m.%d $CURRDATE.15 +%Y.%m)
+
+HISTDIR=~/.history/$HOSTNAME
+mkdir -p $HISTDIR
+
+HISTFILE=$HISTDIR/$CURRDATE.history
+PREVHISTFILE=$HISTDIR/$PREVDATE.history
+HISTSIZE=12000                  # Number of items to keep in memory
+SAVEHIST=10000                  # Number of items to keep in file
+setopt INC_APPEND_HISTORY       # Allow all shells to add to HISTFILE immediately
+setopt EXTENDED_HISTORY         # Add timestamp info to HISTFILE
+setopt hist_expire_dups_first   # Allow dups, but expire old ones after HISTSIZE
+setopt HIST_IGNORE_SPACE        # Don't save commands that beging with a space
+setopt HIST_VERIFY              # Verify the history item that will be executed
+
+# Load the previous month's history file, so we're never left
+# without a history in our shell. Otherwise the 1st of the month
+# would be frustrating besides just having to pay the rent.
+fc -R $PREVHISTFILE
+
 bindkey -v
 export KEYTIMEOUT=1
 
