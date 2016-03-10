@@ -1,6 +1,6 @@
 # Store the current hostname or 'unknown' if we can't
 # get one for some crazy reason
-HOSTNAME=$(hostname | tr '[:upper:]' '[:lower:]')
+HOSTNAME=$(hostname -s | tr '[:upper:]' '[:lower:]')
 : ${HOSTNAME:=unknown}
 
 # Keep history files separated by year and month
