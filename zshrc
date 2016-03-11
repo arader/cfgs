@@ -4,14 +4,26 @@ HOSTNAME=$(hostname -s | tr '[:upper:]' '[:lower:]')
 : ${HOSTNAME:=unknown}
 
 # Keep history files separated by year and month
-# This will save the file in a '20XX.YY.history' file, the
-# PREVDATE command has some shenanigans in it to properly
-# handle getting the previous month when 'today' happens
-# to fall on a day that doesn't exist in the previous month.
-# For example, Oct 31st - 1m would still be Oct, since
-# Sept 31st doesn't exist.
-CURRDATE=$(date -j +%Y.%m)
-PREVDATE=$(date -j -v -1m -f %Y.%m.%d $CURRDATE.15 +%Y.%m)
+# This will save the file in a '20XX.YY.history' file.
+# in FreeBSD this is actually really easy, as the 'date'
+# command is sane. However, since I use zsh on Cygwin as
+# well, this needs to be more portable
+#CURRDATE=$(date -j +%Y.%m)
+#PREVDATE=$(date -j -v -1m -f %Y.%m.%d $CURRDATE.15 +%Y.%m)
+CYEAR=$(date +%Y)
+CMONTH=$(date +%-m)
+PMONTH=$(($CMONTH - 1))
+
+if [[ $PMONTH -eq 0 ]]
+then
+    PMONTH=12
+    PYEAR=$(($CYEAR - 1))
+else
+    PYEAR=$CYEAR
+fi
+
+CURRDATE="$(printf '%d.%02d' $CYEAR $CMONTH)"
+PREVDATE="$(printf '%d.%02d' $PYEAR $PMONTH)"
 
 HISTDIR=~/.history/$HOSTNAME
 mkdir -p $HISTDIR
