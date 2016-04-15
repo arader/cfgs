@@ -34,7 +34,7 @@ HISTSIZE=12000                  # Number of items to keep in memory
 SAVEHIST=10000                  # Number of items to keep in file
 setopt INC_APPEND_HISTORY       # Allow all shells to add to HISTFILE immediately
 setopt EXTENDED_HISTORY         # Add timestamp info to HISTFILE
-setopt hist_expire_dups_first   # Allow dups, but expire old ones after HISTSIZE
+setopt HIST_IGNORE_ALL_DUPS     # Ignore all dups
 setopt HIST_IGNORE_SPACE        # Don't save commands that beging with a space
 setopt HIST_VERIFY              # Verify the history item that will be executed
 
