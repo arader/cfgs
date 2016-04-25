@@ -11,12 +11,13 @@ Windows Registry Editor Version 5.00
 ; The list of key codes is at the bottom of this file
 
 ; Current Remaps:
-; Caps Lock   = Left Shift
-; Left Shift  = Left Ctrl
-; Left Ctrl   = Caps Lock
+; Caps Lock (3a)    => Left Shift (2a)
+; Left Shift (2a)   => Left Ctrl (1d)
+; Left Ctrl (1d)    => Caps Lock (3a)
+; Right Alt (e038)  => Right Ctrl (e01d)
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Keyboard Layout]
-"Scancode Map"=hex:00,00,00,00,00,00,00,00,04,00,00,00,2a,00,3a,00,1d,00,2a,00,3a,00,1d,00,00,00,00,00
+"Scancode Map"=hex:00,00,00,00,00,00,00,00,05,00,00,00,2a,00,3a,00,1d,00,2a,00,3a,00,1d,00,1d,e0,38,e0,00,00,00,00
 
 ; Taken from https://www.experts-exchange.com/articles/2155/Keyboard-Remapping-CAPSLOCK-to-Ctrl-and-Beyond.html
 
