@@ -65,6 +65,9 @@ fi
 autoload -U colors
 colors
 
+export CLICOLOR=1
+export GREP_COLOR="0;36"
+
 # For my own and others sanity
 # git:
 # %b => current branch
@@ -156,5 +159,6 @@ zle -N self-insert url-quote-magic
 #
 alias bt=transmission-remote
 alias btc=bitcoin-cli
+alias grep='grep --color=auto'
 alias j=jobs
 alias ll='ls -laFo'
