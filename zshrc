@@ -1,7 +1,7 @@
 # Store the current hostname or 'unknown' if we can't
 # get one for some crazy reason
-HOSTNAME=$(hostname -s | tr '[:upper:]' '[:lower:]')
-: ${HOSTNAME:=unknown}
+HISTHOST=$(hostname -s | tr '[:upper:]' '[:lower:]')
+: ${HISTHOST:=unknown}
 
 # Keep history files separated by year and month
 # This will save the file in a '20XX.YY.history' file.
@@ -10,26 +10,25 @@ HOSTNAME=$(hostname -s | tr '[:upper:]' '[:lower:]')
 # well, this needs to be more portable
 #CURRDATE=$(date -j +%Y.%m)
 #PREVDATE=$(date -j -v -1m -f %Y.%m.%d $CURRDATE.15 +%Y.%m)
-CYEAR=$(date +%Y)
-CMONTH=$(date +%-m)
-PMONTH=$(($CMONTH - 1))
 
-if [[ $PMONTH -eq 0 ]]
-then
-    PMONTH=12
-    PYEAR=$(($CYEAR - 1))
-else
-    PYEAR=$CYEAR
-fi
-
-CURRDATE="$(printf '%d.%02d' $CYEAR $CMONTH)"
-PREVDATE="$(printf '%d.%02d' $PYEAR $PMONTH)"
-
-HISTDIR=~/.history/$HOSTNAME
+HISTDIR=~/.history/$HISTHOST
 mkdir -p $HISTDIR
 
-HISTFILE=$HISTDIR/$CURRDATE.history
-PREVHISTFILE=$HISTDIR/$PREVDATE.history
+function update_histfile() {
+    CURRMONTH=$(date +%-m)
+
+    if [[ $HISTMONTH != $CURRMONTH ]]
+    then
+        HISTYEAR=$(date +%Y)
+        HISTMONTH=$CURRMONTH
+
+        CURRDATE="$(printf '%d.%02d' $HISTYEAR $HISTMONTH)"
+
+        HISTFILE=$HISTDIR/$CURRDATE.history
+    fi
+}
+
+update_histfile
 HISTSIZE=12000                  # Number of items to keep in memory
 SAVEHIST=10000                  # Number of items to keep in file
 setopt INC_APPEND_HISTORY       # Allow all shells to add to HISTFILE immediately
@@ -38,10 +37,13 @@ setopt HIST_IGNORE_ALL_DUPS     # Ignore all dups
 setopt HIST_IGNORE_SPACE        # Don't save commands that beging with a space
 setopt HIST_VERIFY              # Verify the history item that will be executed
 
-# Load the previous month's history file, so we're never left
+# Load as much old history as we can, so we're never left
 # without a history in our shell. Otherwise the 1st of the month
 # would be frustrating besides just having to pay the rent.
-fc -R $PREVHISTFILE
+for histfile in $HISTDIR/*.history(N)
+do
+    fc -R $histfile
+done
 
 bindkey -v
 export KEYTIMEOUT=1
@@ -115,6 +117,7 @@ function +vi-git-stashed() {
 setopt prompt_subst
 
 precmd() {
+    update_histfile
     vcs_info
     local prefix
 
@@ -162,3 +165,4 @@ alias btc=bitcoin-cli
 alias grep='grep --color=auto'
 alias j=jobs
 alias ll='ls -laFo'
+alias qr=qrcode-terminal
