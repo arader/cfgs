@@ -50,8 +50,18 @@ export KEYTIMEOUT=1
 
 zstyle :compinstall filename '/home/andrew/.zshrc'
 
+# Completion Options
 autoload -Uz compinit
 compinit
+setopt NO_BEEP                      # Don't beep for any reason
+unsetopt LIST_BEEP                  # Don't beep on completion inserts
+zstyle ':completion:*' menu select  # Show a menu for completion values
+
+if [[ -d ~/.zsh/zsh-autosuggestions ]]
+then
+    source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=blue"
+fi
 
 fpath=(~/dev/scripts/zsh/funcs $fpath)
 
