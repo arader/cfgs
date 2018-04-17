@@ -178,4 +178,4 @@ alias btc=bitcoin-cli
 alias grep='grep --color=auto'
 alias j=jobs
 alias ll='ls -laFo'
-alias qr=qrcode-terminal
+alias qr=qrcli
