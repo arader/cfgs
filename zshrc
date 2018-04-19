@@ -1,3 +1,10 @@
+# Auto load hook functions
+autoload -Uz add-zsh-hook
+
+########
+# Shell History
+##
+
 # Store the current hostname or 'unknown' if we can't
 # get one for some crazy reason
 HISTHOST=$(hostname -s | tr '[:upper:]' '[:lower:]')
@@ -50,7 +57,29 @@ export KEYTIMEOUT=1
 
 zstyle :compinstall filename '/home/andrew/.zshrc'
 
-# Completion Options
+add-zsh-hook precmd update_histfile
+
+zle -N zle-line-init
+zle -N zle-keymap-select
+
+autoload -U up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey "^[[A" up-line-or-beginning-search # Up
+bindkey "^[[B" down-line-or-beginning-search # Down
+bindkey "^R" history-incremental-pattern-search-backward
+
+bindkey '\e.' insert-last-word
+
+# auto-escape shell characters such as '&' and '!'
+autoload -U url-quote-magic
+zle -N self-insert url-quote-magic
+
+########
+# Autocomplete
+##
+
 autoload -Uz compinit
 compinit
 setopt NO_BEEP                      # Don't beep for any reason
@@ -66,6 +95,10 @@ then
     ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=12
 fi
 
+########
+# Scripts & Functions
+##
+
 fpath=(~/dev/scripts/zsh/funcs $fpath)
 
 # autoload all executable scripts
@@ -77,11 +110,19 @@ then
     done
 fi
 
+########
+# Colors
+##
+
 autoload -U colors
 colors
 
 export CLICOLOR=1
 export GREP_COLOR="0;36"
+
+########
+# Prompt
+##
 
 # For my own and others sanity
 # git:
@@ -130,7 +171,6 @@ function +vi-git-stashed() {
 setopt prompt_subst
 
 precmd() {
-    update_histfile
     vcs_info
     local prefix
 
@@ -153,26 +193,10 @@ function zle-line-init zle-keymap-select {
     zle reset-prompt
 }
 
-zle -N zle-line-init
-zle -N zle-keymap-select
+########
+# Aliases
+##
 
-autoload -U up-line-or-beginning-search
-autoload -U down-line-or-beginning-search
-zle -N up-line-or-beginning-search
-zle -N down-line-or-beginning-search
-bindkey "^[[A" up-line-or-beginning-search # Up
-bindkey "^[[B" down-line-or-beginning-search # Dow
-bindkey "^R" history-incremental-pattern-search-backward
-
-bindkey '\e.' insert-last-word
-
-# auto-escape shell characters such as '&' and '!'
-autoload -U url-quote-magic
-zle -N self-insert url-quote-magic
-
-#
-# aliases
-#
 alias bt=transmission-remote
 alias btc=bitcoin-cli
 alias grep='grep --color=auto'
