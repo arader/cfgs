@@ -1,5 +1,84 @@
-# Auto load hook functions
+########
+# Core functionality
+##
 autoload -Uz add-zsh-hook
+
+if [[ ! -a ~/.zsh-async ]]
+then
+    git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async ~/.zsh-async
+fi
+source ~/.zsh-async/async.zsh
+
+function prompt() {
+    local prefix
+    local middle
+    local suffix
+
+    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:%F{63}"
+    middle=${1:=%~}
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
+%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
+
+    print -n $prefix$middle$suffix
+}
+
+function git_prompt() {
+    local branch
+    local commit
+    local parent
+    local state
+
+    parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
+    curr=${1#parent/}
+    branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
+    commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
+    state=$(git -C "$1" status --porcelain 2>/dev/null)
+
+    print -n "$curr %F{cyan}$branch%F{white}@%F{blue}$commit"
+
+    if [[ ! -z $(echo $state | grep -o "^ M\|^ R") ]]
+    then
+        print -n '%F{214} ●'
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^M\|^R") ]]
+    then
+        print -n '%F{34} ●'
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^??") ]]
+    then
+        print -n '%F{160} ●'
+    fi
+
+    if [[ -s "$1/.git/refs/stash" ]]
+    then
+        print -n '%F{63} ●'
+    fi
+}
+
+function async_prompt() {
+    if [[ $(\git -C "$1" branch 2>/dev/null) != "" ]]
+    then
+        git_prompt $1
+    fi
+}
+
+async_init
+async_start_worker prompt_worker -n
+
+prompt_callback() {
+    if [[ $2 == 0 ]]
+    then
+        PROMPT=$(prompt $3)
+    else
+        PROMPT=$@
+    fi
+
+    zle && zle reset-prompt
+}
+
+async_register_callback prompt_worker prompt_callback
 
 ########
 # Shell History
@@ -171,19 +250,8 @@ function +vi-git-stashed() {
 setopt prompt_subst
 
 precmd() {
-    vcs_info
-    local prefix
-
-    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:%F{63}"
-    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
-%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
-
-    if [[ -n ${vcs_info_msg_0_} ]]
-    then
-        PROMPT="$prefix${vcs_info_msg_0_}$suffix"
-    else
-        PROMPT="$prefix%~$suffix"
-    fi
+    async_job prompt_worker async_prompt $(pwd)
+    PROMPT=$(prompt)
 }
 RPROMPT=""
 
