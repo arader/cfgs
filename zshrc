@@ -169,9 +169,6 @@ if [[ -d ~/.zsh/zsh-autosuggestions ]]
 then
     source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=blue"
-
-    # Specify a max buffer size. This helps issues with slow pasting
-    ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=12
 fi
 
 ########
