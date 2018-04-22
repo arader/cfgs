@@ -3,6 +3,44 @@
 ##
 autoload -Uz add-zsh-hook
 
+typeset -A symbols
+#symbols=(
+#    GIT_RM                      '\uf458'
+#    GIT_MOD                     '\uf459'
+#    GIT_ADD                     '\uf457'
+#    GIT_RENAME                  '\uf45a'
+#    GIT_STASH                   '\uf53b'
+#    WEATHER_CLEAR               '\ue30d'
+#    WEATHER_CLEAR_NIGHT         '\ue32b'
+#    WEATHER_RAIN                '\ue318'
+#    WEATHER_SNOW                '\ue31a'
+#    WEATHER_SLEET               '\ue3ad'
+#    WEATHER_WIND                '\ue34b'
+#    WEATHER_FOG                 '\ue313'
+#    WEATHER_CLOUDY              '\ue312'
+#    WEATHER_PARTLY_CLOUDY       '\ue302'
+#    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e'
+#    WEATHER_UNKNOWN             '\ue374'
+#    )
+symbols=(
+    GIT_RM                      'D'
+    GIT_MOD                     'M'
+    GIT_ADD                     'A'
+    GIT_RENAME                  'R'
+    GIT_STASH                   'S'
+    WEATHER_CLEAR               'CLEAR'
+    WEATHER_CLEAR_NIGHT         'CLEAR'
+    WEATHER_RAIN                'RAIN'
+    WEATHER_SNOW                'SNOW'
+    WEATHER_SLEET               'SLEET'
+    WEATHER_WIND                'WIND'
+    WEATHER_FOG                 'FOG'
+    WEATHER_CLOUDY              'CLOUDY'
+    WEATHER_PARTLY_CLOUDY       'CLOUDY'
+    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
+    WEATHER_UNKNOWN             'NA'
+    )
+
 if [[ ! -a ~/.zsh-async ]]
 then
     git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async ~/.zsh-async
@@ -14,53 +52,126 @@ function prompt() {
     local middle
     local suffix
 
-    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:%F{63}"
-    middle=${1:=%~}
+    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
+    middle="%F{63}$PROMPT_GIT %F{white}$PROMPT_WEATHER"
     suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
 %(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
     print -n $prefix$middle$suffix
 }
 
-function git_prompt() {
+function queue_prompt_git() {
+    async_job prompt_worker prompt_git $(pwd)
+}
+
+function prompt_git() {
     local branch
     local commit
     local parent
+    local curr
     local state
 
+    print -n 'PROMPT_GIT '
+
+    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+    then
+        print -n '%~'
+        return
+    fi
+
     parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
-    curr=${1#parent/}
+    curr=${1#$parent/}
     branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
     commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
     state=$(git -C "$1" status --porcelain 2>/dev/null)
 
     print -n "$curr %F{cyan}$branch%F{white}@%F{blue}$commit"
 
-    if [[ ! -z $(echo $state | grep -o "^ M\|^ R") ]]
+    if [[ ! -z $(echo $state | grep -o "^ D") ]]
     then
-        print -n '%F{214} ●'
+        print -n "%F{yellow} $symbols[GIT_RM] "
     fi
 
-    if [[ ! -z $(echo $state | grep -o "^M\|^R") ]]
+    if [[ ! -z $(echo $state | grep -o "^ M") ]]
     then
-        print -n '%F{34} ●'
+        print -n "%F{yellow} $symbols[GIT_MOD] "
     fi
 
     if [[ ! -z $(echo $state | grep -o "^??") ]]
     then
-        print -n '%F{160} ●'
+        print -n "%F{yellow} $symbols[GIT_ADD] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^D") ]]
+    then
+        print -n "%F{green} $symbols[GIT_RM] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^M") ]]
+    then
+        print -n "%F{green} $symbols[GIT_MOD] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^R") ]]
+    then
+        print -n "%F{green} $symbols[GIT_RENAME] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^A") ]]
+    then
+        print -n "%F{green} $symbols[GIT_ADD] "
     fi
 
     if [[ -s "$1/.git/refs/stash" ]]
     then
-        print -n '%F{63} ●'
+        print -n "%F{green} $symbols[GIT_STASH]"
     fi
 }
 
-function async_prompt() {
-    if [[ $(\git -C "$1" branch 2>/dev/null) != "" ]]
+function queue_prompt_weather() {
+    async_job prompt_worker prompt_weather
+}
+
+function prompt_weather() {
+    local icon
+    DARKSKY_KEY=${DARKSKY_KEY:=$(cat ~/.darksky.key)}
+    DARKSKY_LOC=${DARKSKY_LOC:=$(cat ~/.darksky.loc)}
+    print -n 'PROMPT_WEATHER '
+
+    icon=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
+
+    if [[ "$icon" == "clear-day" ]]
     then
-        git_prompt $1
+        print -n "$symbols[WEATHER_CLEAR]  "
+    elif [[ "$icon" == "clear-night" ]]
+    then
+        print -n "$symbols[WEATHER_CLEAR_NIGHT]  "
+    elif [[ "$icon" == "rain" ]]
+    then
+        print -n "$symbols[WEATHER_RAIN]  "
+    elif [[ "$icon" == "snow" ]]
+    then
+        print -n "$symbols[WEATHER_SNOW]  "
+    elif [[ "$icon" == "sleet" ]]
+    then
+        print -n "$symbols[WEATHER_SLEET]  "
+    elif [[ "$icon" == "wind" ]]
+    then
+        print -n "$symbols[WEATHER_WIND]  "
+    elif [[ "$icon" == "fog" ]]
+    then
+        print -n "$symbols[WEATHER_FOG]  "
+    elif [[ "$icon" == "cloudy" ]]
+    then
+        print -n "$symbols[WEATHER_CLOUDY]  "
+    elif [[ "$icon" == "partly-cloudy-day" ]]
+    then
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY]  "
+    elif [[ "$icon" == "partly-cloudy-night" ]]
+    then
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY_NIGHT]  "
+    else
+        print -n "$symbols[WEATHER_UNKNOWN]  "
     fi
 }
 
@@ -70,7 +181,16 @@ async_start_worker prompt_worker -n
 prompt_callback() {
     if [[ $2 == 0 ]]
     then
-        PROMPT=$(prompt $3)
+        output=$3
+        # Okay, yes this looks absolutely crazy, but all this
+        # is doing is: take the first word in the output
+        # and treat it as a variable name. Assign the rest of
+        # the output to the variable with that name
+        # This makes it so that any async prompt function can
+        # update only a section of the prompt, instead of
+        # overwriting the whole prompt
+        eval "$output[(w)1]='${output#$output[(w)1] }'"
+        PROMPT=$(prompt)
     else
         PROMPT=$@
     fi
@@ -203,57 +323,16 @@ export GREP_COLOR="0;36"
 # Prompt
 ##
 
-# For my own and others sanity
-# git:
-# %b => current branch
-# %a => current action (rebase/merge)
-# prompt:
-# %F => color dict
-# %f => reset color
-# %~ => current path
-# %* => time
-# %n => username
-# %m => shortname host
-# %(?..) => prompt conditional - %(condition.true.false)
-
-autoload -Uz vcs_info
-zstyle ':vcs_info:*' enable git
-zstyle ':vcs_info:git:*' check-for-changes true
-zstyle :'vcs_info:git:*' get-revision true
-zstyle ':vcs_info:git:*' stagedstr '%F{34} ●'
-zstyle ':vcs_info:git:*' unstagedstr '%F{214} ●'
-#zstyle ':vcs_info:*' nvcsformats 'non-git '
-zstyle ':vcs_info:git:*' formats '%r/%S %F{cyan}%b%F{white}@%F{blue}%8.8i%m%u%c'
-zstyle ':vcs_info:git*+set-message:*' hooks git-untracked git-stashed
-
-### git: Show marker (T) if there are untracked files in repository
-# Make sure you have added staged to your 'formats':  %c
-function +vi-git-untracked(){
-    if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' ]] && \
-        git status --porcelain | fgrep '??' &> /dev/null ; then
-        # This will show the marker if there are any untracked files in repo.
-        # If instead you want to show the marker only if there are untracked
-        # files in $PWD, use:
-        #[[ -n $(git ls-files --others --exclude-standard) ]] ; then
-        hook_com[unstaged]+='%F{160} ●'
-    fi
-}
-
-function +vi-git-stashed() {
-    local -a stashes
-
-    if [[ -s ${hook_com[base]}/.git/refs/stash ]] ; then
-        hook_com[misc]+='%F{63} ●'
-    fi
-}
-
 setopt prompt_subst
 
 precmd() {
-    async_job prompt_worker async_prompt $(pwd)
+    queue_prompt_git
     PROMPT=$(prompt)
 }
 RPROMPT=""
+
+PERIOD=30
+add-zsh-hook periodic queue_prompt_weather
 
 function zle-line-init zle-keymap-select {
     VIM_PROMPT="%{$fg_bold[yellow]%} [% EDIT]%  %{$reset_color%}"
