@@ -136,6 +136,10 @@ function prompt_weather() {
     local icon
     DARKSKY_KEY=${DARKSKY_KEY:=$(cat ~/.darksky.key)}
     DARKSKY_LOC=${DARKSKY_LOC:=$(cat ~/.darksky.loc)}
+
+    [[ -z $DARKSKY_KEY ]] && exit 0
+    [[ -z $DARKSKY_LOC ]] && exit 0
+
     print -n 'PROMPT_WEATHER '
 
     icon=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
@@ -181,16 +185,19 @@ async_start_worker prompt_worker -n
 prompt_callback() {
     if [[ $2 == 0 ]]
     then
-        output=$3
-        # Okay, yes this looks absolutely crazy, but all this
-        # is doing is: take the first word in the output
-        # and treat it as a variable name. Assign the rest of
-        # the output to the variable with that name
-        # This makes it so that any async prompt function can
-        # update only a section of the prompt, instead of
-        # overwriting the whole prompt
-        eval "$output[(w)1]='${output#$output[(w)1] }'"
-        PROMPT=$(prompt)
+        if [[ ! -z $3 ]]
+        then
+            output=$3
+            # Okay, yes this looks absolutely crazy, but all this
+            # is doing is: take the first word in the output
+            # and treat it as a variable name. Assign the rest of
+            # the output to the variable with that name
+            # This makes it so that any async prompt function can
+            # update only a section of the prompt, instead of
+            # overwriting the whole prompt
+            eval "$output[(w)1]='${output#$output[(w)1] }'"
+            PROMPT=$(prompt)
+        fi
     else
         PROMPT=$@
     fi
