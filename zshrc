@@ -5,22 +5,24 @@ autoload -Uz add-zsh-hook
 
 typeset -A symbols
 #symbols=(
-#    GIT_RM                      '\uf458'
-#    GIT_MOD                     '\uf459'
-#    GIT_ADD                     '\uf457'
-#    GIT_RENAME                  '\uf45a'
-#    GIT_STASH                   '\uf53b'
-#    WEATHER_CLEAR               '\ue30d'
-#    WEATHER_CLEAR_NIGHT         '\ue32b'
-#    WEATHER_RAIN                '\ue318'
-#    WEATHER_SNOW                '\ue31a'
-#    WEATHER_SLEET               '\ue3ad'
-#    WEATHER_WIND                '\ue34b'
-#    WEATHER_FOG                 '\ue313'
-#    WEATHER_CLOUDY              '\ue312'
-#    WEATHER_PARTLY_CLOUDY       '\ue302'
-#    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e'
-#    WEATHER_UNKNOWN             '\ue374'
+#    GIT_RM                      '\uf458  '
+#    GIT_MOD                     '\uf459  '
+#    GIT_ADD                     '\uf457  '
+#    GIT_RENAME                  '\uf45a  '
+#    GIT_STASH                   '\uf53b  '
+#    WEATHER_CLEAR               '\ue30d  '
+#    WEATHER_CLEAR_NIGHT         '\ue32b  '
+#    WEATHER_RAIN                '\ue318  '
+#    WEATHER_SNOW                '\ue31a  '
+#    WEATHER_SLEET               '\ue3ad  '
+#    WEATHER_WIND                '\ue34b  '
+#    WEATHER_FOG                 '\ue313  '
+#    WEATHER_CLOUDY              '\ue312  '
+#    WEATHER_PARTLY_CLOUDY       '\ue302  '
+#    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
+#    WEATHER_UNKNOWN             '\ue374  '
+#    COMMUTE_TIME_PREFIX         '\ufa1a '
+#    COMMUTE_TIME_SUFFIX         ''
 #    )
 symbols=(
     GIT_RM                      'D'
@@ -39,7 +41,12 @@ symbols=(
     WEATHER_PARTLY_CLOUDY       'CLOUDY'
     WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
     WEATHER_UNKNOWN             'NA'
+    COMMUTE_TIME_PREFIX         ''
+    COMMUTE_TIME_SUFFIX         ' min'
     )
+
+trips_am=(96 99)
+trips_pm=(102 83)
 
 if [[ ! -a ~/.zsh-async ]]
 then
@@ -53,7 +60,7 @@ function prompt() {
     local suffix
 
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$PROMPT_GIT %F{white}$PROMPT_WEATHER"
+    middle="%F{63}$PROMPT_GIT %F{white}$PROMPT_WEATHER %F{cyan}$PROMPT_COMMUTE"
     suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
 %(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
@@ -142,41 +149,77 @@ function prompt_weather() {
 
     print -n 'PROMPT_WEATHER '
 
-    icon=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
+    forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags)
+    degrees=$(echo $forecast | sed -e 's/.*"temperature":\([0-9]*\).*/\1/')
+    icon=$(echo $forecast | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
+
+    print -n "$degrees\u00b0 "
 
     if [[ "$icon" == "clear-day" ]]
     then
-        print -n "$symbols[WEATHER_CLEAR]  "
+        print -n "$symbols[WEATHER_CLEAR]"
     elif [[ "$icon" == "clear-night" ]]
     then
-        print -n "$symbols[WEATHER_CLEAR_NIGHT]  "
+        print -n "$symbols[WEATHER_CLEAR_NIGHT]"
     elif [[ "$icon" == "rain" ]]
     then
-        print -n "$symbols[WEATHER_RAIN]  "
+        print -n "$symbols[WEATHER_RAIN]"
     elif [[ "$icon" == "snow" ]]
     then
-        print -n "$symbols[WEATHER_SNOW]  "
+        print -n "$symbols[WEATHER_SNOW]"
     elif [[ "$icon" == "sleet" ]]
     then
-        print -n "$symbols[WEATHER_SLEET]  "
+        print -n "$symbols[WEATHER_SLEET]"
     elif [[ "$icon" == "wind" ]]
     then
-        print -n "$symbols[WEATHER_WIND]  "
+        print -n "$symbols[WEATHER_WIND]"
     elif [[ "$icon" == "fog" ]]
     then
-        print -n "$symbols[WEATHER_FOG]  "
+        print -n "$symbols[WEATHER_FOG]"
     elif [[ "$icon" == "cloudy" ]]
     then
-        print -n "$symbols[WEATHER_CLOUDY]  "
+        print -n "$symbols[WEATHER_CLOUDY]"
     elif [[ "$icon" == "partly-cloudy-day" ]]
     then
-        print -n "$symbols[WEATHER_PARTLY_CLOUDY]  "
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY]"
     elif [[ "$icon" == "partly-cloudy-night" ]]
     then
-        print -n "$symbols[WEATHER_PARTLY_CLOUDY_NIGHT]  "
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY_NIGHT]"
     else
-        print -n "$symbols[WEATHER_UNKNOWN]  "
+        print -n "$symbols[WEATHER_UNKNOWN]"
     fi
+}
+
+function queue_prompt_commute() {
+    async_job prompt_worker prompt_commute
+}
+
+function prompt_commute {
+    WSDOT_KEY=${WSDOT_KEY:=$(cat ~/.wsdot.key)}
+
+    [[ -z $WSDOT_KEY ]] && exit 0
+
+    print -n 'PROMPT_COMMUTE '
+
+    local total
+    local trips
+
+    if [[ $(date +%p) == 'AM' ]]
+    then
+        set -A trips $trips_am
+    else
+        set -A trips $trips_pm
+    fi
+
+    total=0
+
+    for trip in $trips
+    do
+        trip_time=$(curl -s http://www.wsdot.wa.gov/Traffic/api/TravelTimes/TravelTimesREST.svc/GetTravelTimeAsJson\?AccessCode=$WSDOT_KEY\&TravelTimeId=$trip | sed -e 's/.*"CurrentTime":\([0-9.]*\).*/\1/')
+        total=$(($total + $trip_time))
+    done
+
+    print -n "$symbols[COMMUTE_TIME_PREFIX]$total$symbols[COMMUTE_TIME_SUFFIX]"
 }
 
 async_init
@@ -340,6 +383,7 @@ RPROMPT=""
 
 PERIOD=30
 add-zsh-hook periodic queue_prompt_weather
+add-zsh-hook periodic queue_prompt_commute
 
 function zle-line-init zle-keymap-select {
     VIM_PROMPT="%{$fg_bold[yellow]%} [% EDIT]%  %{$reset_color%}"
