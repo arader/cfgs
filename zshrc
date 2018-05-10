@@ -21,7 +21,7 @@ typeset -A symbols
 #    WEATHER_PARTLY_CLOUDY       '\ue302  '
 #    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
 #    WEATHER_UNKNOWN             '\ue374  '
-#    COMMUTE_TIME_PREFIX         '\ufa1a '
+#    COMMUTE_TIME_PREFIX         '\uf1b9 '
 #    COMMUTE_TIME_SUFFIX         ''
 #    )
 symbols=(
@@ -191,7 +191,10 @@ function prompt_weather() {
 }
 
 function queue_prompt_commute() {
-    async_job prompt_worker prompt_commute
+    if [[ "AR-DEV" == "$HOST" ]]
+    then
+        async_job prompt_worker prompt_commute
+    fi
 }
 
 function prompt_commute {
