@@ -54,8 +54,8 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 
-" Solarized color scheme
-Plugin 'altercation/vim-colors-solarized'
+" Rust file handling
+Plugin 'rust-lang/rust.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()
@@ -65,7 +65,6 @@ filetype plugin indent on
 
 syntax on
 set background=dark
-colorscheme solarized
 
 if has("gui_running")
     set mousehide
