@@ -48,11 +48,23 @@ symbols=(
 trips_am=(96 99)
 trips_pm=(102 83)
 
-if [[ ! -a ~/.zsh-async ]]
+if [[ ! -a ~/.zsh/zsh-async ]]
 then
-    git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async ~/.zsh-async
+    git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
 fi
-source ~/.zsh-async/async.zsh
+source ~/.zsh/zsh-async/async.zsh
+
+if [[ ! -a ~/.zsh/fast-syntax-highlighting ]]
+then
+    git clone git@github.com:zdharma/fast-syntax-highlighting.git ~/.zsh/fast-syntax-highlighting
+fi
+source ~/.zsh/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+
+if [[ ! -a ~/.zsh/zsh-autosuggestions ]]
+then
+    git clone git@github.com:zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions
+fi
+source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 function prompt() {
     local prefix
@@ -324,10 +336,6 @@ bindkey "^R" history-incremental-pattern-search-backward
 
 bindkey '\e.' insert-last-word
 
-# auto-escape shell characters such as '&' and '!'
-autoload -U url-quote-magic
-zle -N self-insert url-quote-magic
-
 ########
 # Autocomplete
 ##
@@ -338,14 +346,10 @@ setopt NO_BEEP                      # Don't beep for any reason
 unsetopt LIST_BEEP                  # Don't beep on completion inserts
 zstyle ':completion:*' menu select  # Show a menu for completion values
 
-if [[ -d ~/.zsh/zsh-autosuggestions ]]
-then
-    source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=blue"
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=blue"
 
-    # Specify a max buffer size. This helps issues with slow pasting
-    ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=12
-fi
+# Specify a max buffer size. This helps issues with slow pasting
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=12
 
 ########
 # Scripts & Functions
