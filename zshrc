@@ -374,6 +374,7 @@ autoload -U colors
 colors
 
 export CLICOLOR=1
+export LSCOLORS=exfxgxgxcxbxbxbxBxGxdx
 export GREP_COLOR="0;36"
 
 ########
