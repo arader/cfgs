@@ -4,46 +4,46 @@
 autoload -Uz add-zsh-hook
 
 typeset -A symbols
-#symbols=(
-#    GIT_RM                      '\uf458  '
-#    GIT_MOD                     '\uf459  '
-#    GIT_ADD                     '\uf457  '
-#    GIT_RENAME                  '\uf45a  '
-#    GIT_STASH                   '\uf53b  '
-#    WEATHER_CLEAR               '\ue30d  '
-#    WEATHER_CLEAR_NIGHT         '\ue32b  '
-#    WEATHER_RAIN                '\ue318  '
-#    WEATHER_SNOW                '\ue31a  '
-#    WEATHER_SLEET               '\ue3ad  '
-#    WEATHER_WIND                '\ue34b  '
-#    WEATHER_FOG                 '\ue313  '
-#    WEATHER_CLOUDY              '\ue312  '
-#    WEATHER_PARTLY_CLOUDY       '\ue302  '
-#    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
-#    WEATHER_UNKNOWN             '\ue374  '
-#    COMMUTE_TIME_PREFIX         '\uf1b9 '
-#    COMMUTE_TIME_SUFFIX         ''
-#    )
 symbols=(
-    GIT_RM                      'D'
-    GIT_MOD                     'M'
-    GIT_ADD                     'A'
-    GIT_RENAME                  'R'
-    GIT_STASH                   'S'
-    WEATHER_CLEAR               'CLEAR'
-    WEATHER_CLEAR_NIGHT         'CLEAR'
-    WEATHER_RAIN                'RAIN'
-    WEATHER_SNOW                'SNOW'
-    WEATHER_SLEET               'SLEET'
-    WEATHER_WIND                'WIND'
-    WEATHER_FOG                 'FOG'
-    WEATHER_CLOUDY              'CLOUDY'
-    WEATHER_PARTLY_CLOUDY       'CLOUDY'
-    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
-    WEATHER_UNKNOWN             'NA'
-    COMMUTE_TIME_PREFIX         ''
-    COMMUTE_TIME_SUFFIX         ' min'
+    GIT_RM                      '\uf458  '
+    GIT_MOD                     '\uf459  '
+    GIT_ADD                     '\uf457  '
+    GIT_RENAME                  '\uf45a  '
+    GIT_STASH                   '\uf53b  '
+    WEATHER_CLEAR               '\ue30d  '
+    WEATHER_CLEAR_NIGHT         '\ue32b  '
+    WEATHER_RAIN                '\ue318  '
+    WEATHER_SNOW                '\ue31a  '
+    WEATHER_SLEET               '\ue3ad  '
+    WEATHER_WIND                '\ue34b  '
+    WEATHER_FOG                 '\ue313  '
+    WEATHER_CLOUDY              '\ue312  '
+    WEATHER_PARTLY_CLOUDY       '\ue302  '
+    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
+    WEATHER_UNKNOWN             '\ue374  '
+    COMMUTE_TIME_PREFIX         '\uf1b9 '
+    COMMUTE_TIME_SUFFIX         ''
     )
+#symbols=(
+#    GIT_RM                      'D'
+#    GIT_MOD                     'M'
+#    GIT_ADD                     'A'
+#    GIT_RENAME                  'R'
+#    GIT_STASH                   'S'
+#    WEATHER_CLEAR               'CLEAR'
+#    WEATHER_CLEAR_NIGHT         'CLEAR'
+#    WEATHER_RAIN                'RAIN'
+#    WEATHER_SNOW                'SNOW'
+#    WEATHER_SLEET               'SLEET'
+#    WEATHER_WIND                'WIND'
+#    WEATHER_FOG                 'FOG'
+#    WEATHER_CLOUDY              'CLOUDY'
+#    WEATHER_PARTLY_CLOUDY       'CLOUDY'
+#    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
+#    WEATHER_UNKNOWN             'NA'
+#    COMMUTE_TIME_PREFIX         ''
+#    COMMUTE_TIME_SUFFIX         ' min'
+#    )
 
 trips_am=(96 99)
 trips_pm=(102 83)
@@ -372,6 +372,11 @@ fi
 
 autoload -U colors
 colors
+
+if [[ -a ~/.dircolors ]]
+then
+    eval $(dircolors ~/.dircolors)
+fi
 
 export CLICOLOR=1
 export LSCOLORS=exfxgxgxcxbxbxbxBxGxdx

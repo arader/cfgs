@@ -10,6 +10,7 @@ cfg7="scripts/tmux/dot.sh,$HOME/scripts/tmux/dot.sh"
 cfg8="scripts/tmux/notifications.sh,$HOME/scripts/tmux/notifications.sh"
 cfg9="scripts/tmux/membar.sh,$HOME/scripts/tmux/membar.sh"
 cfg10="scripts/tmux/cpubar.sh,$HOME/scripts/tmux/cpubar.sh"
+cfg11="dircolors,$HOME/.dircolors"
 
 install()
 {
