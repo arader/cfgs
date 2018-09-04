@@ -11,6 +11,7 @@ cfg8="scripts/tmux/notifications.sh,$HOME/scripts/tmux/notifications.sh"
 cfg9="scripts/tmux/membar.sh,$HOME/scripts/tmux/membar.sh"
 cfg10="scripts/tmux/cpubar.sh,$HOME/scripts/tmux/cpubar.sh"
 cfg11="dircolors,$HOME/.dircolors"
+cfg12="minttyrc,$HOME/.minttyrc"
 
 install()
 {
