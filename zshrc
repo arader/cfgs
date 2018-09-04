@@ -147,7 +147,9 @@ function prompt_git() {
 }
 
 function queue_prompt_weather() {
-    async_job prompt_worker prompt_weather
+    [[ -f ~/.darksky.key ]] &&
+        [[ -f ~/.darksky.loc ]] &&
+        async_job prompt_worker prompt_weather
 }
 
 function prompt_weather() {
@@ -202,10 +204,7 @@ function prompt_weather() {
 }
 
 function queue_prompt_commute() {
-    if [[ "AR-DEV" == "$HOST" ]]
-    then
-        async_job prompt_worker prompt_commute
-    fi
+    [[ -f ~/.wsdot.key ]] && async_job prompt_worker prompt_commute
 }
 
 function prompt_commute {
