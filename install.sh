@@ -12,6 +12,12 @@ cfg9="scripts/tmux/membar.sh,$HOME/scripts/tmux/membar.sh"
 cfg10="scripts/tmux/cpubar.sh,$HOME/scripts/tmux/cpubar.sh"
 cfg11="dircolors,$HOME/.dircolors"
 cfg12="minttyrc,$HOME/.minttyrc"
+cfg13="zsh/funcs/decrypt,$HOME/.zsh/funcs/decrypt"
+cfg14="zsh/funcs/encrypt,$HOME/.zsh/funcs/encrypt"
+cfg15="zsh/funcs/get-key,$HOME/.zsh/funcs/get-key"
+cfg16="zsh/funcs/hist,$HOME/.zsh/funcs/hist"
+cfg17="zsh/funcs/sign,$HOME/.zsh/funcs/sign"
+cfg18="zsh/funcs/verify,$HOME/.zsh/funcs/verify"
 
 install()
 {

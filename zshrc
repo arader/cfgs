@@ -344,12 +344,12 @@ ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=12
 # Scripts & Functions
 ##
 
-fpath=(~/dev/scripts/zsh/funcs $fpath)
+fpath=(~/.zsh/funcs $fpath)
 
 # autoload all executable scripts
-if [[ -d ~/dev/scripts/zsh/funcs ]]
+if [[ -d ~/.zsh/funcs ]]
 then
-    for func in ~/dev/scripts/zsh/funcs/*(N-.x:t); do
+    for func in ~/.zsh/funcs/*(N-.x:t); do
         unhash -f $func 2>/dev/null
         autoload +X $func
     done
