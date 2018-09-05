@@ -3,12 +3,17 @@
 bracket_color="#[fg=#cb4b16]"
 unit_color="#[fg=#586e75]"
 
-page=$(sysctl -n vm.stats.vm.v_page_size)
-active=$(echo "$(sysctl -n vm.stats.vm.v_active_count) * $page" | bc -l)
-inactive=$(echo "$(sysctl -n vm.stats.vm.v_inactive_count) * $page" | bc -l)
-wired=$(echo "$(sysctl -n vm.stats.vm.v_wire_count) * $page" | bc -l)
-cache=$(echo "$(sysctl -n vm.stats.vm.v_cache_count) * $page" | bc -l)
-free=$(echo "$(sysctl -n vm.stats.vm.v_free_count) * $page" | bc -l)
+if [[ -f "/sbin/sysctl" ]]
+then
+    page=$(sysctl -n vm.stats.vm.v_page_size)
+    active=$(echo "$(sysctl -n vm.stats.vm.v_active_count) * $page" | bc -l)
+    inactive=$(echo "$(sysctl -n vm.stats.vm.v_inactive_count) * $page" | bc -l)
+    wired=$(echo "$(sysctl -n vm.stats.vm.v_wire_count) * $page" | bc -l)
+    cache=$(echo "$(sysctl -n vm.stats.vm.v_cache_count) * $page" | bc -l)
+    free=$(echo "$(sysctl -n vm.stats.vm.v_free_count) * $page" | bc -l)
+else
+    free=$(cat /proc/meminfo | grep -i ^memfree: | sed -e 's/.* \([0-9]*\) kB/\1 * 1024/' | bc)
+fi
 
 echo -n " $bracket_color┌"
 dash=" "
