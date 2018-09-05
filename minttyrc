@@ -10,6 +10,8 @@ BackspaceSendsBS=no
 Font=Bitstream Vera Sans Mono Nerd Font Complete
 FontHeight=10
 
+Term=xterm-256color
+
 CursorType=block
 
 ForegroundColour=211,208,200
