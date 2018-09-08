@@ -9,6 +9,8 @@ BackspaceSendsBS=no
 
 Font=Bitstream Vera Sans Mono Nerd Font Complete
 FontHeight=10
+Charwidth=unicode
+Emojis=apple
 
 Term=xterm-256color
 
@@ -33,3 +35,4 @@ Cyan=102,204,204
 BoldCyan=210,123,83
 White=211,208,200
 BoldWhite=242,240,236
+Transparency=off
