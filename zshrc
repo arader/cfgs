@@ -51,7 +51,7 @@ trips=(102 83)
 
 if [[ ! -a ~/.zsh/zsh-async ]]
 then
-    git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
+    git clone -b 'v1.7.1' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
 fi
 source ~/.zsh/zsh-async/async.zsh
 
