@@ -5,6 +5,7 @@ autoload -Uz add-zsh-hook
 
 typeset -A symbols
 #symbols=(
+#    BUSY                        '\uf251  '
 #    GIT_RM                      '\uf458  '
 #    GIT_MOD                     '\uf459  '
 #    GIT_ADD                     '\uf457  '
@@ -25,6 +26,7 @@ typeset -A symbols
 #    COMMUTE_TIME_SUFFIX         ''
 #    )
 symbols=(
+    BUSY                        '...'
     GIT_RM                      'D'
     GIT_MOD                     'M'
     GIT_ADD                     'A'
@@ -49,7 +51,7 @@ trips=(102 83)
 
 if [[ ! -a ~/.zsh/zsh-async ]]
 then
-    git clone -b 'v1.6.0' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
+    git clone -b 'v1.7.1' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
 fi
 source ~/.zsh/zsh-async/async.zsh
 
@@ -69,16 +71,24 @@ function prompt() {
     local prefix
     local middle
     local suffix
+    local busy
+
+    if [[ $PROMPT_GIT_BUSY == 1 ]]
+    then
+        busy=$symbols[BUSY]
+    fi
 
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
     middle="%F{63}$PROMPT_GIT %F{white}$PROMPT_WEATHER %F{cyan}$PROMPT_COMMUTE"
-    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))   $busy
 %(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
     print -n $prefix$middle$suffix
 }
 
+PROMPT_GIT_BUSY=0
 function queue_prompt_git() {
+    PROMPT_GIT_BUSY=1
     async_job prompt_worker prompt_git $(pwd)
 }
 
@@ -243,6 +253,7 @@ prompt_callback() {
             # update only a section of the prompt, instead of
             # overwriting the whole prompt
             eval "$output[(w)1]='${output#$output[(w)1] }'"
+            eval "$output[(w)1]_BUSY=0"
             PROMPT=$(prompt)
         fi
     else
