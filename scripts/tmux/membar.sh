@@ -3,7 +3,7 @@
 bracket_color="#[fg=#cb4b16]"
 unit_color="#[fg=#586e75]"
 
-if [[ -f "/sbin/sysctl" ]]
+if [ -f "/sbin/sysctl" ]
 then
     page=$(sysctl -n vm.stats.vm.v_page_size)
     active=$(echo "$(sysctl -n vm.stats.vm.v_active_count) * $page" | bc -l)
