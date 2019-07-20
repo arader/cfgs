@@ -6,6 +6,7 @@ autoload -Uz add-zsh-hook
 typeset -A symbols
 #symbols=(
 #    BUSY                        '\uf251  '
+#    ERROR                       '!'
 #    GIT_RM                      '\uf458  '
 #    GIT_MOD                     '\uf459  '
 #    GIT_ADD                     '\uf457  '
@@ -27,6 +28,7 @@ typeset -A symbols
 #    )
 symbols=(
     BUSY                        '...'
+    ERROR                       '!'
     GIT_RM                      'D'
     GIT_MOD                     'M'
     GIT_ADD                     'A'
@@ -46,6 +48,10 @@ symbols=(
     COMMUTE_TIME_PREFIX         ''
     COMMUTE_TIME_SUFFIX         ' min'
     )
+
+typeset -A PROMPTS
+typeset -A PROMPTS_STATES
+typeset -A PROMPTS_ERRORS
 
 trips=(102 83)
 
@@ -73,22 +79,27 @@ function prompt() {
     local suffix
     local busy
 
-    if [[ $PROMPT_GIT_BUSY == 1 ]]
-    then
-        busy=$symbols[BUSY]
-    fi
+    for key val in ${(kv)PROMPTS_STATES}
+    do
+        if [[ $val == "busy" ]]
+        then
+            busy=$symbols[BUSY]
+        elif [[ $val == "error" ]]
+        then
+            err=$symbols[ERROR]
+        fi
+    done
 
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$PROMPT_GIT %F{white}$PROMPT_WEATHER %F{cyan}$PROMPT_COMMUTE"
-    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))   $busy
+    middle="%F{63}$PROMPTS[prompt_git] %F{white}$PROMPTS[prompt_weather] %F{cyan}$PROMPTS[prompt_commute]"
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy%F{red}$err
 %(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
     print -n $prefix$middle$suffix
 }
 
-PROMPT_GIT_BUSY=0
 function queue_prompt_git() {
-    PROMPT_GIT_BUSY=1
+    PROMPTS_STATES[prompt_git]="busy"
     async_job prompt_worker prompt_git $(pwd)
 }
 
@@ -98,8 +109,6 @@ function prompt_git() {
     local parent
     local curr
     local state
-
-    print -n 'PROMPT_GIT '
 
     if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
     then
@@ -159,6 +168,7 @@ function prompt_git() {
 function queue_prompt_weather() {
     [[ -f ~/.darksky.key ]] &&
         [[ -f ~/.darksky.loc ]] &&
+        PROMPTS_STATES[prompt_weather]="busy"
         async_job prompt_worker prompt_weather
 }
 
@@ -169,8 +179,6 @@ function prompt_weather() {
 
     [[ -z $DARKSKY_KEY ]] && exit 0
     [[ -z $DARKSKY_LOC ]] && exit 0
-
-    print -n 'PROMPT_WEATHER '
 
     forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags)
     degrees=$(echo $forecast | sed -e 's/.*"temperature":\([0-9]*\).*/\1/')
@@ -214,22 +222,23 @@ function prompt_weather() {
 }
 
 function queue_prompt_commute() {
-    [[ -f ~/.wsdot.key ]] && async_job prompt_worker prompt_commute
+    [[ -f ~/.wsdot.key ]] && [[ $(hostname -f) == *".corp."* ]] && async_job prompt_worker prompt_commute
 }
 
 function prompt_commute {
     WSDOT_KEY=${WSDOT_KEY:=$(cat ~/.wsdot.key)}
 
-    [[ -z $WSDOT_KEY ]] && exit 0
-
-    print -n 'PROMPT_COMMUTE '
+    if [[ -z $WSDOT_KEY ]]
+    then
+        exit 0
+    fi
 
     local total
     total=0
 
     for trip in $trips
     do
-        trip_time=$(curl -s http://www.wsdot.wa.gov/Traffic/api/TravelTimes/TravelTimesREST.svc/GetTravelTimeAsJson\?AccessCode=$WSDOT_KEY\&TravelTimeId=$trip | sed -e 's/.*"CurrentTime":\([0-9.]*\).*/\1/')
+        trip_time=$(curl -s https://www.wsdot.wa.gov/Traffic/api/TravelTimes/TravelTimesREST.svc/GetTravelTimeAsJson\?AccessCode=$WSDOT_KEY\&TravelTimeId=$trip | sed -e 's/.*"CurrentTime":\([0-9.]*\).*/\1/')
         total=$(($total + $trip_time))
     done
 
@@ -242,23 +251,16 @@ async_start_worker prompt_worker -n
 prompt_callback() {
     if [[ $2 == 0 ]]
     then
-        if [[ ! -z $3 ]]
-        then
-            output=$3
-            # Okay, yes this looks absolutely crazy, but all this
-            # is doing is: take the first word in the output
-            # and treat it as a variable name. Assign the rest of
-            # the output to the variable with that name
-            # This makes it so that any async prompt function can
-            # update only a section of the prompt, instead of
-            # overwriting the whole prompt
-            eval "$output[(w)1]='${output#$output[(w)1] }'"
-            eval "$output[(w)1]_BUSY=0"
-            PROMPT=$(prompt)
-        fi
+        PROMPTS[$1]=$3
+        PROMPTS_STATES[$1]="done"
+        PROMPTS_ERRORS[$1]=""
     else
-        PROMPT=$@
+        PROMPTS[$1]=""
+        PROMPTS_STATES[$1]="error"
+        PROMPTS_ERRORS[$1]=$@
     fi
+
+    PROMPT=$(prompt)
 
     zle && zle reset-prompt
 }
