@@ -4,50 +4,52 @@
 autoload -Uz add-zsh-hook
 
 typeset -A symbols
-#symbols=(
-#    BUSY                        '\uf251  '
-#    ERROR                       '!'
-#    GIT_RM                      '\uf458  '
-#    GIT_MOD                     '\uf459  '
-#    GIT_ADD                     '\uf457  '
-#    GIT_RENAME                  '\uf45a  '
-#    GIT_STASH                   '\uf53b  '
-#    WEATHER_CLEAR               '\ue30d  '
-#    WEATHER_CLEAR_NIGHT         '\ue32b  '
-#    WEATHER_RAIN                '\ue318  '
-#    WEATHER_SNOW                '\ue31a  '
-#    WEATHER_SLEET               '\ue3ad  '
-#    WEATHER_WIND                '\ue34b  '
-#    WEATHER_FOG                 '\ue313  '
-#    WEATHER_CLOUDY              '\ue312  '
-#    WEATHER_PARTLY_CLOUDY       '\ue302  '
-#    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
-#    WEATHER_UNKNOWN             '\ue374  '
-#    COMMUTE_TIME_PREFIX         '\uf1b9 '
-#    COMMUTE_TIME_SUFFIX         ''
-#    )
 symbols=(
-    BUSY                        '...'
-    ERROR                       '!'
-    GIT_RM                      'D'
-    GIT_MOD                     'M'
-    GIT_ADD                     'A'
-    GIT_RENAME                  'R'
-    GIT_STASH                   'S'
-    WEATHER_CLEAR               'CLEAR'
-    WEATHER_CLEAR_NIGHT         'CLEAR'
-    WEATHER_RAIN                'RAIN'
-    WEATHER_SNOW                'SNOW'
-    WEATHER_SLEET               'SLEET'
-    WEATHER_WIND                'WIND'
-    WEATHER_FOG                 'FOG'
-    WEATHER_CLOUDY              'CLOUDY'
-    WEATHER_PARTLY_CLOUDY       'CLOUDY'
-    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
-    WEATHER_UNKNOWN             'NA'
-    COMMUTE_TIME_PREFIX         ''
-    COMMUTE_TIME_SUFFIX         ' min'
+    BUSY                        '\uf251  '
+    ERROR                       '\ufad5'
+    GIT_RM                      '\uf458  '
+    GIT_MOD                     '\uf459  '
+    GIT_ADD                     '\uf457  '
+    GIT_RENAME                  '\uf45a  '
+    GIT_STASH                   '\uf53b  '
+    ALERTING                    '\uf7d3 '
+    WEATHER_CLEAR               '\ue30d  '
+    WEATHER_CLEAR_NIGHT         '\ue32b  '
+    WEATHER_RAIN                '\ue318  '
+    WEATHER_SNOW                '\ue31a  '
+    WEATHER_SLEET               '\ue3ad  '
+    WEATHER_WIND                '\ue34b  '
+    WEATHER_FOG                 '\ue313  '
+    WEATHER_CLOUDY              '\ue312  '
+    WEATHER_PARTLY_CLOUDY       '\ue302  '
+    WEATHER_PARTLY_CLOUDY_NIGHT '\ue37e  '
+    WEATHER_UNKNOWN             '\ue374  '
+    COMMUTE_TIME_PREFIX         '\uf1b9 '
+    COMMUTE_TIME_SUFFIX         ''
     )
+#symbols=(
+#    BUSY                        '...'
+#    ERROR                       '!'
+#    GIT_RM                      'D'
+#    GIT_MOD                     'M'
+#    GIT_ADD                     'A'
+#    GIT_RENAME                  'R'
+#    GIT_STASH                   'S'
+#    ALERTING                    '!!'
+#    WEATHER_CLEAR               'CLEAR'
+#    WEATHER_CLEAR_NIGHT         'CLEAR'
+#    WEATHER_RAIN                'RAIN'
+#    WEATHER_SNOW                'SNOW'
+#    WEATHER_SLEET               'SLEET'
+#    WEATHER_WIND                'WIND'
+#    WEATHER_FOG                 'FOG'
+#    WEATHER_CLOUDY              'CLOUDY'
+#    WEATHER_PARTLY_CLOUDY       'CLOUDY'
+#    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
+#    WEATHER_UNKNOWN             'NA'
+#    COMMUTE_TIME_PREFIX         ''
+#    COMMUTE_TIME_SUFFIX         ' min'
+#    )
 
 typeset -A PROMPTS
 typeset -A PROMPTS_STATES
@@ -91,9 +93,9 @@ function prompt() {
     done
 
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$PROMPTS[prompt_git] %F{white}$PROMPTS[prompt_weather] %F{cyan}$PROMPTS[prompt_commute]"
-    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy%F{red}$err
-%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
+    middle="%F{63}$PROMPTS[prompt_git] %F{white}$PROMPTS[prompt_weather]%F{cyan}$PROMPTS[prompt_commute]"
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy
+%F{red}$err$PROMPTS[prompt_grafana_alerts]%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
     print -n $prefix$middle$suffix
 }
@@ -163,6 +165,19 @@ function prompt_git() {
     then
         print -n "%F{green} $symbols[GIT_STASH]"
     fi
+}
+
+function queue_prompt_grafana_alerts() {
+    [[ -f ~/.grafana.key ]] &&
+        PROMPTS_STATES[prompt_grafana_alerts]="busy"
+        async_job prompt_worker prompt_grafana_alerts
+}
+
+function prompt_grafana_alerts() {
+    GRAFANA_KEY=${GRAFANA_KEY:=$(cat ~/.grafana.key)}
+    GRAFANA_HOST=${GRAFANA_HOST:=$(cat ~/.grafana.host)}
+
+    curl -s -H "Authorization: Bearer $GRAFANA_KEY" "https://$GRAFANA_HOST/api/alerts?state=alerting" | grep -qv \"id\" || print -n $symbols[ALERTING]
 }
 
 function queue_prompt_weather() {
@@ -392,6 +407,7 @@ setopt prompt_subst
 
 precmd() {
     queue_prompt_git
+    queue_prompt_grafana_alerts
     PROMPT=$(prompt)
 }
 RPROMPT=""
