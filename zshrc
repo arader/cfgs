@@ -1,7 +1,6 @@
 ########
-# Core functionality
+# Variables
 ##
-autoload -Uz add-zsh-hook
 
 typeset -A symbols
 symbols=(
@@ -51,15 +50,17 @@ symbols=(
 #    COMMUTE_TIME_SUFFIX         ' min'
 #    )
 
-typeset -A PROMPTS
-typeset -A PROMPTS_STATES
-typeset -A PROMPTS_ERRORS
-
 trips=(102 83)
+
+########
+# Dependencies
+##
+
+autoload -Uz add-zsh-hook
 
 if [[ ! -a ~/.zsh/zsh-async ]]
 then
-    git clone -b 'v1.7.1' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
+    git clone -b 'v1.7.2' git@github.com:mafredri/zsh-async.git ~/.zsh/zsh-async
 fi
 source ~/.zsh/zsh-async/async.zsh
 
@@ -75,212 +76,79 @@ then
 fi
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-function prompt() {
-    local prefix
-    local middle
-    local suffix
-    local busy
+########
+# Async Prompt Helpers
+##
 
-    for key val in ${(kv)PROMPTS_STATES}
-    do
-        if [[ $val == "busy" ]]
-        then
-            busy=$symbols[BUSY]
-        elif [[ $val == "error" ]]
-        then
-            err=$symbols[ERROR]
-        fi
-    done
+typeset -A PROMPTS
+typeset -A PROMPTS_STATES
+typeset -A PROMPTS_COUNTS
+typeset -A PROMPTS_ERRORS
 
-    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$PROMPTS[prompt_git] %F{white}$PROMPTS[prompt_weather]%F{cyan}$PROMPTS[prompt_commute]"
-    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy
-%F{red}$err$PROMPTS[prompt_grafana_alerts]%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
-
-    print -n $prefix$middle$suffix
+function start_prompt() {
+    async_init
+    async_register_callback prompt_worker prompt_callback
+    async_start_worker prompt_worker
 }
 
-function queue_prompt_git() {
-    PROMPTS_STATES[prompt_git]="busy"
-    async_job prompt_worker prompt_git $(pwd)
+function queue_prompt() {
+    local prompt_id
+    prompt_id=$1
+    shift
+    PROMPTS_STATES[$prompt_id]="busy"
+    let "PROMPTS_COUNTS[$prompt_id] = $PROMPTS_COUNTS[$prompt_id] + 1"
+    async_job prompt_worker _async_prompt_worker $prompt_id $PROMPTS_COUNTS[$prompt_id] $@
 }
 
-function prompt_git() {
-    local branch
-    local commit
-    local parent
-    local curr
-    local state
+function _async_prompt_worker() {
+    local prompt_id
+    prompt_id=$1
+    shift
+    print -n "$prompt_id $1 "
+    shift
+    eval $prompt_id $@
+}
 
-    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+function prompt_callback() {
+    # The callback is invoked with the following parameters
+    # $1: job name, should be '_async_prompt_worker'
+    # $2: job return code
+    # $3: stdout of worker. '_async_prompt_worker' will output the following:
+    #       prompt_id prompt_instance worker_output
+    # $4: job execution time
+    # $5: stderr of job
+    # $6: 0 if job result buffer is empty, 1 if there are more jobs
+    local output=$3
+    local prompt_id=$output[(w)1]
+    local prompt_instance=$output[(w)2]
+    output=${output#$prompt_id $prompt_instance }
+
+    if [[ $prompt_instance != $PROMPTS_COUNTS[$prompt_id] ]]
     then
-        print -n '%~'
+        # Only process the latest instance of this prompt job
         return
     fi
 
-    parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
-    curr=${1#$parent/}
-    branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
-    commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
-    state=$(git -C "$1" status --porcelain 2>/dev/null)
-
-    print -n "$curr %F{cyan}$branch%F{white}@%F{blue}$commit"
-
-    if [[ ! -z $(echo $state | grep -o "^ D") ]]
-    then
-        print -n "%F{yellow} $symbols[GIT_RM] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^ M") ]]
-    then
-        print -n "%F{yellow} $symbols[GIT_MOD] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^??") ]]
-    then
-        print -n "%F{yellow} $symbols[GIT_ADD] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^D") ]]
-    then
-        print -n "%F{green} $symbols[GIT_RM] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^M") ]]
-    then
-        print -n "%F{green} $symbols[GIT_MOD] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^R") ]]
-    then
-        print -n "%F{green} $symbols[GIT_RENAME] "
-    fi
-
-    if [[ ! -z $(echo $state | grep -o "^A") ]]
-    then
-        print -n "%F{green} $symbols[GIT_ADD] "
-    fi
-
-    if [[ -s "$1/.git/refs/stash" ]]
-    then
-        print -n "%F{green} $symbols[GIT_STASH]"
-    fi
-}
-
-function queue_prompt_grafana_alerts() {
-    [[ -f ~/.grafana.key ]] &&
-        PROMPTS_STATES[prompt_grafana_alerts]="busy"
-        async_job prompt_worker prompt_grafana_alerts
-}
-
-function prompt_grafana_alerts() {
-    GRAFANA_KEY=${GRAFANA_KEY:=$(cat ~/.grafana.key)}
-    GRAFANA_HOST=${GRAFANA_HOST:=$(cat ~/.grafana.host)}
-
-    curl -s -H "Authorization: Bearer $GRAFANA_KEY" "https://$GRAFANA_HOST/api/alerts?state=alerting" | grep -qv \"id\" || print -n $symbols[ALERTING]
-}
-
-function queue_prompt_weather() {
-    [[ -f ~/.darksky.key ]] &&
-        [[ -f ~/.darksky.loc ]] &&
-        PROMPTS_STATES[prompt_weather]="busy"
-        async_job prompt_worker prompt_weather
-}
-
-function prompt_weather() {
-    local icon
-    DARKSKY_KEY=${DARKSKY_KEY:=$(cat ~/.darksky.key)}
-    DARKSKY_LOC=${DARKSKY_LOC:=$(cat ~/.darksky.loc)}
-
-    [[ -z $DARKSKY_KEY ]] && exit 0
-    [[ -z $DARKSKY_LOC ]] && exit 0
-
-    forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags)
-    degrees=$(echo $forecast | sed -e 's/.*"temperature":\([0-9]*\).*/\1/')
-    icon=$(echo $forecast | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
-
-    print -n "$degrees\u00b0 "
-
-    if [[ "$icon" == "clear-day" ]]
-    then
-        print -n "$symbols[WEATHER_CLEAR]"
-    elif [[ "$icon" == "clear-night" ]]
-    then
-        print -n "$symbols[WEATHER_CLEAR_NIGHT]"
-    elif [[ "$icon" == "rain" ]]
-    then
-        print -n "$symbols[WEATHER_RAIN]"
-    elif [[ "$icon" == "snow" ]]
-    then
-        print -n "$symbols[WEATHER_SNOW]"
-    elif [[ "$icon" == "sleet" ]]
-    then
-        print -n "$symbols[WEATHER_SLEET]"
-    elif [[ "$icon" == "wind" ]]
-    then
-        print -n "$symbols[WEATHER_WIND]"
-    elif [[ "$icon" == "fog" ]]
-    then
-        print -n "$symbols[WEATHER_FOG]"
-    elif [[ "$icon" == "cloudy" ]]
-    then
-        print -n "$symbols[WEATHER_CLOUDY]"
-    elif [[ "$icon" == "partly-cloudy-day" ]]
-    then
-        print -n "$symbols[WEATHER_PARTLY_CLOUDY]"
-    elif [[ "$icon" == "partly-cloudy-night" ]]
-    then
-        print -n "$symbols[WEATHER_PARTLY_CLOUDY_NIGHT]"
-    else
-        print -n "$symbols[WEATHER_UNKNOWN]"
-    fi
-}
-
-function queue_prompt_commute() {
-    [[ -f ~/.wsdot.key ]] && [[ $(hostname -f) == *".corp."* ]] && async_job prompt_worker prompt_commute
-}
-
-function prompt_commute {
-    WSDOT_KEY=${WSDOT_KEY:=$(cat ~/.wsdot.key)}
-
-    if [[ -z $WSDOT_KEY ]]
-    then
-        exit 0
-    fi
-
-    local total
-    total=0
-
-    for trip in $trips
-    do
-        trip_time=$(curl -s https://www.wsdot.wa.gov/Traffic/api/TravelTimes/TravelTimesREST.svc/GetTravelTimeAsJson\?AccessCode=$WSDOT_KEY\&TravelTimeId=$trip | sed -e 's/.*"CurrentTime":\([0-9.]*\).*/\1/')
-        total=$(($total + $trip_time))
-    done
-
-    print -n "$symbols[COMMUTE_TIME_PREFIX]$total$symbols[COMMUTE_TIME_SUFFIX]"
-}
-
-async_init
-async_start_worker prompt_worker -n
-
-prompt_callback() {
     if [[ $2 == 0 ]]
     then
-        PROMPTS[$1]=$3
-        PROMPTS_STATES[$1]="done"
-        PROMPTS_ERRORS[$1]=""
+        PROMPTS[$prompt_id]=$output
+        PROMPTS_STATES[$prompt_id]="done"
+        PROMPTS_ERRORS[$prompt_id]=""
     else
-        PROMPTS[$1]=""
-        PROMPTS_STATES[$1]="error"
-        PROMPTS_ERRORS[$1]=$@
+        PROMPTS[$prompt_id]=""
+        PROMPTS_STATES[$prompt_id]="error"
+        PROMPTS_ERRORS[$prompt_id]=$@
     fi
 
     PROMPT=$(prompt)
 
-    zle && zle reset-prompt
+    # '$6' is the number of async function results in the queue.
+    # if this is the last result, reset the prompt
+    if [[ $6 == 0 ]]
+    then
+        zle && zle reset-prompt
+    fi
 }
-
-async_register_callback prompt_worker prompt_callback
 
 ########
 # Shell History
@@ -400,10 +268,172 @@ export LSCOLORS=exfxgxgxcxbxbxbxBxGxdx
 export GREP_COLOR="0;36"
 
 ########
+# Async Prompts
+##
+
+function queue_prompt_git() {
+    queue_prompt prompt_git "$(pwd)"
+}
+
+function prompt_git() {
+    local branch
+    local commit
+    local parent
+    local curr
+    local state
+
+    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+    then
+        return
+    fi
+
+    parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
+    curr=${1#$parent/}
+    branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
+    commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
+    state=$(git -C "$1" status --porcelain 2>/dev/null)
+
+    print -n "$curr %F{cyan}$branch%F{white}@%F{blue}$commit"
+
+    if [[ ! -z $(echo $state | grep -o "^ D") ]]
+    then
+        print -n "%F{yellow} $symbols[GIT_RM] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^ M") ]]
+    then
+        print -n "%F{yellow} $symbols[GIT_MOD] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^??") ]]
+    then
+        print -n "%F{yellow} $symbols[GIT_ADD] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^D") ]]
+    then
+        print -n "%F{green} $symbols[GIT_RM] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^M") ]]
+    then
+        print -n "%F{green} $symbols[GIT_MOD] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^R") ]]
+    then
+        print -n "%F{green} $symbols[GIT_RENAME] "
+    fi
+
+    if [[ ! -z $(echo $state | grep -o "^A") ]]
+    then
+        print -n "%F{green} $symbols[GIT_ADD] "
+    fi
+
+    if [[ -s "$1/.git/refs/stash" ]]
+    then
+        print -n "%F{green} $symbols[GIT_STASH]"
+    fi
+}
+
+function queue_prompt_grafana_alerts() {
+    [[ -f ~/.grafana.key ]] &&
+        queue_prompt prompt_grafana_alerts
+}
+
+function prompt_grafana_alerts() {
+    GRAFANA_KEY=${GRAFANA_KEY:=$(cat ~/.grafana.key)}
+    GRAFANA_HOST=${GRAFANA_HOST:=$(cat ~/.grafana.host)}
+
+    curl -s -H "Authorization: Bearer $GRAFANA_KEY" "https://$GRAFANA_HOST/api/alerts?state=alerting" | grep -qv \"id\" || print -n $symbols[ALERTING]
+}
+
+function queue_prompt_weather() {
+    [[ -f ~/.darksky.key ]] &&
+        [[ -f ~/.darksky.loc ]] &&
+        queue_prompt prompt_weather
+}
+
+function prompt_weather() {
+    local icon
+    DARKSKY_KEY=${DARKSKY_KEY:=$(cat ~/.darksky.key)}
+    DARKSKY_LOC=${DARKSKY_LOC:=$(cat ~/.darksky.loc)}
+
+    [[ -z $DARKSKY_KEY ]] && exit 0
+    [[ -z $DARKSKY_LOC ]] && exit 0
+
+    forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags)
+    degrees=$(echo $forecast | sed -e 's/.*"temperature":\([0-9]*\).*/\1/')
+    icon=$(echo $forecast | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
+
+    print -n "$degrees\u00b0 "
+
+    if [[ "$icon" == "clear-day" ]]
+    then
+        print -n "$symbols[WEATHER_CLEAR]"
+    elif [[ "$icon" == "clear-night" ]]
+    then
+        print -n "$symbols[WEATHER_CLEAR_NIGHT]"
+    elif [[ "$icon" == "rain" ]]
+    then
+        print -n "$symbols[WEATHER_RAIN]"
+    elif [[ "$icon" == "snow" ]]
+    then
+        print -n "$symbols[WEATHER_SNOW]"
+    elif [[ "$icon" == "sleet" ]]
+    then
+        print -n "$symbols[WEATHER_SLEET]"
+    elif [[ "$icon" == "wind" ]]
+    then
+        print -n "$symbols[WEATHER_WIND]"
+    elif [[ "$icon" == "fog" ]]
+    then
+        print -n "$symbols[WEATHER_FOG]"
+    elif [[ "$icon" == "cloudy" ]]
+    then
+        print -n "$symbols[WEATHER_CLOUDY]"
+    elif [[ "$icon" == "partly-cloudy-day" ]]
+    then
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY]"
+    elif [[ "$icon" == "partly-cloudy-night" ]]
+    then
+        print -n "$symbols[WEATHER_PARTLY_CLOUDY_NIGHT]"
+    else
+        print -n "$symbols[WEATHER_UNKNOWN]"
+    fi
+}
+
+function queue_prompt_commute() {
+    [[ -f ~/.wsdot.key ]] && [[ $(hostname -f) == *".corp."* ]] && queue_prompt prompt_commute
+}
+
+function prompt_commute {
+    WSDOT_KEY=${WSDOT_KEY:=$(cat ~/.wsdot.key)}
+
+    if [[ -z $WSDOT_KEY ]]
+    then
+        exit 0
+    fi
+
+    local total
+    total=0
+
+    for trip in $trips
+    do
+        trip_time=$(curl -s https://www.wsdot.wa.gov/Traffic/api/TravelTimes/TravelTimesREST.svc/GetTravelTimeAsJson\?AccessCode=$WSDOT_KEY\&TravelTimeId=$trip | sed -e 's/.*"CurrentTime":\([0-9.]*\).*/\1/')
+        total=$(($total + $trip_time))
+    done
+
+    print -n "$symbols[COMMUTE_TIME_PREFIX]$total$symbols[COMMUTE_TIME_SUFFIX]"
+}
+
+########
 # Prompt
 ##
 
 setopt prompt_subst
+
+start_prompt
 
 precmd() {
     queue_prompt_git
@@ -420,6 +450,39 @@ function zle-line-init zle-keymap-select {
     VIM_PROMPT="%{$fg_bold[yellow]%} [% EDIT]%  %{$reset_color%}"
     RPROMPT="${${KEYMAP/vicmd/$VIM_PROMPT}/(main|viins)/} $EPS1"
     zle reset-prompt
+}
+
+function prompt() {
+    local prefix
+    local middle
+    local suffix
+    local busy
+    local pwdinfo
+
+    for key val in ${(kv)PROMPTS_STATES}
+    do
+        if [[ $val == "busy" ]]
+        then
+            busy=$symbols[BUSY]
+        elif [[ $val == "error" ]]
+        then
+            err=$symbols[ERROR]
+        fi
+    done
+
+    pwdinfo="%~"
+
+    if [[ $PROMPTS_STATES[prompt_git] != "busy" ]] && [[ ! -z $PROMPTS[prompt_git] ]]
+    then
+        pwdinfo=$PROMPTS[prompt_git]
+    fi
+
+    prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
+    middle="%F{63}$pwdinfo %F{white}$PROMPTS[prompt_weather]%F{cyan}$PROMPTS[prompt_commute]"
+    suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy
+%F{red}$err$PROMPTS[prompt_grafana_alerts]%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
+
+    print -n $prefix$middle$suffix
 }
 
 ########
