@@ -4,7 +4,12 @@
 
 typeset -A symbols
 symbols=(
-    BUSY                        '\uf251  '
+    BUSY0                       '\uf251  '
+    BUSY1                       '\uf252  '
+    BUSY2                       '\uf253  '
+    BUSY3                       '\uf251  '
+    BUSY4                       '\uf252  '
+    BUSY5                       '\uf253  '
     ERROR                       '\ufad5'
     GIT_RM                      '\uf458  '
     GIT_MOD                     '\uf459  '
@@ -27,7 +32,12 @@ symbols=(
     COMMUTE_TIME_SUFFIX         ''
     )
 #symbols=(
-#    BUSY                        '...'
+#    BUSY0                       '.  '
+#    BUSY1                       '.. '
+#    BUSY2                       '...'
+#    BUSY3                       ' ..'
+#    BUSY4                       '  .'
+#    BUSY5                       ' . '
 #    ERROR                       '!'
 #    GIT_RM                      'D'
 #    GIT_MOD                     'M'
@@ -80,9 +90,11 @@ source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 # Async Prompt Helpers
 ##
 
+PROMPT_JOBS=0
+PROMPT_TICKS=0
 typeset -A PROMPTS
 typeset -A PROMPTS_STATES
-typeset -A PROMPTS_COUNTS
+typeset -A PROMPTS_CURRENT_JOBS
 typeset -A PROMPTS_ERRORS
 
 function start_prompt() {
@@ -95,9 +107,18 @@ function queue_prompt() {
     local prompt_id
     prompt_id=$1
     shift
+
+    let "PROMPT_JOBS = $PROMPT_JOBS + 1"
+
     PROMPTS_STATES[$prompt_id]="busy"
-    let "PROMPTS_COUNTS[$prompt_id] = $PROMPTS_COUNTS[$prompt_id] + 1"
-    async_job prompt_worker _async_prompt_worker $prompt_id $PROMPTS_COUNTS[$prompt_id] $@
+
+    let "PROMPTS_CURRENT_JOBS[$prompt_id] = $PROMPTS_CURRENT_JOBS[$prompt_id] + 1"
+    async_job prompt_worker _async_prompt_worker $prompt_id $PROMPTS_CURRENT_JOBS[$prompt_id] $@
+
+    if [[ $PROMPT_JOBS == 1 ]]
+    then
+        async_job prompt_worker _async_prompt_timer
+    fi
 }
 
 function _async_prompt_worker() {
@@ -109,35 +130,53 @@ function _async_prompt_worker() {
     eval $prompt_id $@
 }
 
+function _async_prompt_timer() {
+    sleep 0.5
+}
+
 function prompt_callback() {
-    # The callback is invoked with the following parameters
-    # $1: job name, should be '_async_prompt_worker'
-    # $2: job return code
-    # $3: stdout of worker. '_async_prompt_worker' will output the following:
-    #       prompt_id prompt_instance worker_output
-    # $4: job execution time
-    # $5: stderr of job
-    # $6: 0 if job result buffer is empty, 1 if there are more jobs
-    local output=$3
-    local prompt_id=$output[(w)1]
-    local prompt_instance=$output[(w)2]
-    output=${output#$prompt_id $prompt_instance }
-
-    if [[ $prompt_instance != $PROMPTS_COUNTS[$prompt_id] ]]
+    if [[ $1 == _async_prompt_worker ]]
     then
-        # Only process the latest instance of this prompt job
-        return
-    fi
+        # The callback is invoked with the following parameters
+        # $1: job name, should be '_async_prompt_worker'
+        # $2: job return code
+        # $3: stdout of worker. '_async_prompt_worker' will output the following:
+        #       prompt_id prompt_instance worker_output
+        # $4: job execution time
+        # $5: stderr of job
+        # $6: 0 if job result buffer is empty, 1 if there are more jobs
+        local output=$3
+        local prompt_id=$output[(w)1]
+        local prompt_instance=$output[(w)2]
+        output=${output#$prompt_id $prompt_instance }
 
-    if [[ $2 == 0 ]]
+        let "PROMPT_JOBS = $PROMPT_JOBS - 1"
+
+        if [[ $PROMPT_JOBS == 0 ]]
+        then
+            PROMPT_TICKS=0
+        fi
+
+        if [[ $prompt_instance != $PROMPTS_CURRENT_JOBS[$prompt_id] ]]
+        then
+            # Only process the latest instance of this prompt job
+            return
+        fi
+
+        if [[ $2 == 0 ]]
+        then
+            PROMPTS[$prompt_id]=$output
+            PROMPTS_STATES[$prompt_id]="done"
+            PROMPTS_ERRORS[$prompt_id]=""
+        else
+            PROMPTS[$prompt_id]=""
+            PROMPTS_STATES[$prompt_id]="error"
+            PROMPTS_ERRORS[$prompt_id]=$@
+        fi
+    elif [[ $1 == _async_prompt_timer ]] && [[ $PROMPT_JOBS -gt 0 ]]
     then
-        PROMPTS[$prompt_id]=$output
-        PROMPTS_STATES[$prompt_id]="done"
-        PROMPTS_ERRORS[$prompt_id]=""
-    else
-        PROMPTS[$prompt_id]=""
-        PROMPTS_STATES[$prompt_id]="error"
-        PROMPTS_ERRORS[$prompt_id]=$@
+        let "PROMPT_TICKS = $PROMPT_TICKS + 1"
+        async_job prompt_worker _async_prompt_timer
     fi
 
     PROMPT=$(prompt)
@@ -407,7 +446,7 @@ function queue_prompt_commute() {
     [[ -f ~/.wsdot.key ]] && [[ $(hostname -f) == *".corp."* ]] && queue_prompt prompt_commute
 }
 
-function prompt_commute {
+function prompt_commute() {
     WSDOT_KEY=${WSDOT_KEY:=$(cat ~/.wsdot.key)}
 
     if [[ -z $WSDOT_KEY ]]
@@ -458,17 +497,14 @@ function prompt() {
     local suffix
     local busy
     local pwdinfo
+    local delta
 
-    for key val in ${(kv)PROMPTS_STATES}
-    do
-        if [[ $val == "busy" ]]
-        then
-            busy=$symbols[BUSY]
-        elif [[ $val == "error" ]]
-        then
-            err=$symbols[ERROR]
-        fi
-    done
+    if [[ $PROMPT_TICKS -gt 0 ]]
+    then
+        local offset
+        let "offset = ($PROMPT_TICKS - 1) % 6"
+        busy=$symbols[BUSY$offset]
+    fi
 
     pwdinfo="%~"
 
