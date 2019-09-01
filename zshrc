@@ -11,11 +11,11 @@ symbols=(
     BUSY4                       '\uf252  '
     BUSY5                       '\uf253  '
     ERROR                       '\ufad5'
-    GIT_RM                      '\uf458  '
-    GIT_MOD                     '\uf459  '
-    GIT_ADD                     '\uf457  '
-    GIT_RENAME                  '\uf45a  '
-    GIT_STASH                   '\uf53b  '
+    GIT_RM                      '\uf458'
+    GIT_MOD                     '\uf459'
+    GIT_ADD                     '\uf457'
+    GIT_RENAME                  '\uf45a'
+    GIT_STASH                   '\uf53b'
     ALERTING                    '\uf7d3 '
     WEATHER_CLEAR               '\ue30d  '
     WEATHER_CLEAR_NIGHT         '\ue32b  '
@@ -315,63 +315,72 @@ function queue_prompt_git() {
 }
 
 function prompt_git() {
-    local branch
-    local commit
-    local parent
-    local curr
-    local state
-
     if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
     then
         return
     fi
 
-    parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
-    curr=${1#$parent/}
-    branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
-    commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
-    state=$(git -C "$1" status --porcelain 2>/dev/null)
+    local parent=$(git -C "$1" rev-parse --show-toplevel | xargs dirname)
+    local curr=${1#$parent/}
+    local branch=${$(git -C "$1" symbolic-ref HEAD 2>/dev/null)#refs/heads/}
+    local commit=$(git -C "$1" rev-parse HEAD | cut -c 1-7)
+    local state=$(git -C "$1" status --porcelain 2>/dev/null)
+    local unstaged=0
 
     print -n "$curr %F{cyan}$branch%F{white}@%F{blue}$commit"
 
     if [[ ! -z $(echo $state | grep -o "^ D") ]]
     then
-        print -n "%F{yellow} $symbols[GIT_RM] "
+        print -n "%F{yellow} $symbols[GIT_RM]"
+        unstaged=1
     fi
 
     if [[ ! -z $(echo $state | grep -o "^ M") ]]
     then
-        print -n "%F{yellow} $symbols[GIT_MOD] "
+        print -n "%F{yellow} $symbols[GIT_MOD]"
+        unstaged=1
     fi
 
     if [[ ! -z $(echo $state | grep -o "^??") ]]
     then
-        print -n "%F{yellow} $symbols[GIT_ADD] "
+        print -n "%F{yellow} $symbols[GIT_ADD]"
+        unstaged=1
+    fi
+
+    local spacer=""
+    if [[ $unstaged == 1 ]]
+    then
+        spacer=" "
     fi
 
     if [[ ! -z $(echo $state | grep -o "^D") ]]
     then
-        print -n "%F{green} $symbols[GIT_RM] "
+        print -n "$spacer%F{green} $symbols[GIT_RM]"
+        spacer=""
     fi
 
     if [[ ! -z $(echo $state | grep -o "^M") ]]
     then
-        print -n "%F{green} $symbols[GIT_MOD] "
+        print -n "$spacer%F{green} $symbols[GIT_MOD]"
+        spacer=""
     fi
 
     if [[ ! -z $(echo $state | grep -o "^R") ]]
     then
-        print -n "%F{green} $symbols[GIT_RENAME] "
+        print -n "$spacer%F{green} $symbols[GIT_RENAME]"
+        spacer=""
     fi
 
     if [[ ! -z $(echo $state | grep -o "^A") ]]
     then
-        print -n "%F{green} $symbols[GIT_ADD] "
+        print -n "$spacer%F{green} $symbols[GIT_ADD]"
+        spacer=""
     fi
 
     if [[ -s "$1/.git/refs/stash" ]]
     then
-        print -n "%F{green} $symbols[GIT_STASH]"
+        print -n "$spacer%F{green} $symbols[GIT_STASH]"
+        spacer=""
     fi
 }
 
@@ -514,7 +523,7 @@ function prompt() {
     fi
 
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$pwdinfo %F{white}$PROMPTS[prompt_weather]%F{cyan}$PROMPTS[prompt_commute]"
+    middle="%F{63}$pwdinfo   %F{243}$PROMPTS[prompt_weather]  $PROMPTS[prompt_commute]"
     suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy
 %F{red}$err$PROMPTS[prompt_grafana_alerts]%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
