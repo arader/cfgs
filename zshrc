@@ -299,7 +299,7 @@ colors
 
 if [[ -a ~/.dircolors ]]
 then
-    eval $(dircolors ~/.dircolors)
+    eval $(dircolors ~/.dircolors > /dev/null 2>&1k)
 fi
 
 export CLICOLOR=1
@@ -410,7 +410,7 @@ function prompt_weather() {
     [[ -z $DARKSKY_KEY ]] && exit 0
     [[ -z $DARKSKY_LOC ]] && exit 0
 
-    forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags)
+    forecast=$(curl -s https://api.darksky.net/forecast/$DARKSKY_KEY/$DARKSKY_LOC,$(($(date +%s) + 900))\?exclude\=minutely,hourly,daily,alerts,flags 2>&1)
     degrees=$(echo $forecast | sed -e 's/.*"temperature":\([0-9]*\).*/\1/')
     icon=$(echo $forecast | sed -e 's/.*"icon":"\([^"]*\)".*/\1/')
 
