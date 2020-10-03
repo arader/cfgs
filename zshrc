@@ -299,7 +299,7 @@ colors
 
 if [[ -a ~/.dircolors ]]
 then
-    eval $(dircolors ~/.dircolors > /dev/null 2>&1k)
+    eval $(dircolors ~/.dircolors > /dev/null 2>&1)
 fi
 
 export CLICOLOR=1
