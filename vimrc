@@ -5,6 +5,8 @@ set secure
 " set the file encoding order
 set fencs=ucs-bom,utf-8,default,latin1,ucs-2le
 
+set modeline
+
 " allow modified buffers to be kept off screen
 set hidden
 
