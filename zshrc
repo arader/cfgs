@@ -540,3 +540,4 @@ alias grep='grep --color=auto'
 alias j=jobs
 alias ll='ls -laFo'
 alias qr=qrcli
+alias t='tmux new-session -A -s main'
