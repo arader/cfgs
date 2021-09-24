@@ -3,7 +3,10 @@
 ##
 
 typeset -A symbols
-symbols=(
+typeset -A isymbols
+typeset -A asymbols
+
+isymbols=(
     BUSY0                       '\uf251  '
     BUSY1                       '\uf252  '
     BUSY2                       '\uf253  '
@@ -16,6 +19,10 @@ symbols=(
     GIT_ADD                     '\uf457'
     GIT_RENAME                  '\uf45a'
     GIT_STASH                   '\uf53b'
+    GITEA_SUCCESS               '?'
+    GITEA_PENDING               '??'
+    GITEA_WARNING               '???'
+    GITEA_FAILURE               '????'
     ALERTING                    '\uf7d3 '
     WEATHER_CLEAR               '\ue30d  '
     WEATHER_CLEAR_NIGHT         '\ue32b  '
@@ -31,34 +38,39 @@ symbols=(
     COMMUTE_TIME_PREFIX         '\uf1b9 '
     COMMUTE_TIME_SUFFIX         ''
     )
-#symbols=(
-#    BUSY0                       '.  '
-#    BUSY1                       '.. '
-#    BUSY2                       '...'
-#    BUSY3                       ' ..'
-#    BUSY4                       '  .'
-#    BUSY5                       ' . '
-#    ERROR                       '!'
-#    GIT_RM                      'D'
-#    GIT_MOD                     'M'
-#    GIT_ADD                     'A'
-#    GIT_RENAME                  'R'
-#    GIT_STASH                   'S'
-#    ALERTING                    '!!'
-#    WEATHER_CLEAR               'CLEAR'
-#    WEATHER_CLEAR_NIGHT         'CLEAR'
-#    WEATHER_RAIN                'RAIN'
-#    WEATHER_SNOW                'SNOW'
-#    WEATHER_SLEET               'SLEET'
-#    WEATHER_WIND                'WIND'
-#    WEATHER_FOG                 'FOG'
-#    WEATHER_CLOUDY              'CLOUDY'
-#    WEATHER_PARTLY_CLOUDY       'CLOUDY'
-#    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
-#    WEATHER_UNKNOWN             'NA'
-#    COMMUTE_TIME_PREFIX         ''
-#    COMMUTE_TIME_SUFFIX         ' min'
-#    )
+
+symbols=(
+    BUSY0                       '.  '
+    BUSY1                       '.. '
+    BUSY2                       '...'
+    BUSY3                       ' ..'
+    BUSY4                       '  .'
+    BUSY5                       ' . '
+    ERROR                       '!'
+    GIT_RM                      'D'
+    GIT_MOD                     'M'
+    GIT_ADD                     'A'
+    GIT_RENAME                  'R'
+    GIT_STASH                   'S'
+    GITEA_SUCCESS               '=D'
+    GITEA_PENDING               '...'
+    GITEA_WARNING               '.!.'
+    GITEA_FAILURE               '!!!'
+    ALERTING                    '!!'
+    WEATHER_CLEAR               'CLEAR'
+    WEATHER_CLEAR_NIGHT         'CLEAR'
+    WEATHER_RAIN                'RAIN'
+    WEATHER_SNOW                'SNOW'
+    WEATHER_SLEET               'SLEET'
+    WEATHER_WIND                'WIND'
+    WEATHER_FOG                 'FOG'
+    WEATHER_CLOUDY              'CLOUDY'
+    WEATHER_PARTLY_CLOUDY       'CLOUDY'
+    WEATHER_PARTLY_CLOUDY_NIGHT 'CLOUDY'
+    WEATHER_UNKNOWN             'NA'
+    COMMUTE_TIME_PREFIX         ''
+    COMMUTE_TIME_SUFFIX         ' min'
+    )
 
 trips=(102 83)
 
@@ -451,6 +463,54 @@ function prompt_weather() {
     fi
 }
 
+function queue_prompt_gitea() {
+    [[ -f ~/.zsh/gitea.host ]] &&
+        [[ -f ~/.zsh/gitea.token ]] &&
+        queue_prompt prompt_gitea "$(pwd)"
+}
+
+function prompt_gitea() {
+    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+    then
+        return
+    fi
+
+    GITEA_HOST=${GITEA_HOST:=$(cat ~/.zsh/gitea.host)}
+    GITEA_TOKEN=${GITEA_TOKEN:=$(cat ~/.zsh/gitea.token)}
+
+    [[ -z $GITEA_HOST ]] && exit 0
+    [[ -z $GITEA_TOKEN ]] && exit 0
+
+    local remote=$(git -C "$1" remote -v | sed -e "s|.*@$GITEA_HOST:/\([^ ]*\) .*|\1|" | head -n 1)
+
+    [[ -z $remote ]] && exit 0
+
+    local commit=$(git -C "$1" rev-parse HEAD)
+
+    local json=$(curl -s -H "Authorization: token $GITEA_TOKEN" "https://$GITEA_HOST/api/v1/repos/$remote/statuses/$commit")
+
+    [[ -z $json ]] && exit 0
+
+    local commit_status=$(echo $json | egrep -o '"status":"[^"]*"' | head -n 1)
+
+    print -n "%F{243}("
+
+    if [[ "$commit_status" == '"status":"success"' ]]
+    then
+        print -n "%F{green}$symbols[GITEA_SUCCESS]"
+    elif [[ "$commit_status" == '"status":"pending"' ]]
+    then
+        print -n "%F{cyan}$symbols[GITEA_PENDING]"
+    elif [[ "$commit_status" == '"status":"warning"' ]]
+    then
+        print -n "%F{yellow}$symbols[GITEA_WARNING]"
+    else
+        print -n "%F{red}$symbols[GITEA_FAILURE]"
+    fi
+
+    print -n "%F{243})"
+}
+
 function queue_prompt_commute() {
     [[ -f ~/.wsdot.key ]] && [[ $(hostname -f) == *".corp."* ]] && queue_prompt prompt_commute
 }
@@ -485,6 +545,7 @@ start_prompt
 
 precmd() {
     queue_prompt_git
+    queue_prompt_gitea
     queue_prompt_grafana_alerts
     PROMPT=$(prompt)
 }
@@ -522,8 +583,13 @@ function prompt() {
         pwdinfo=$PROMPTS[prompt_git]
     fi
 
+    if [[ $PROMPTS_STATES[prompt_gitea] != "busy" ]] && [[ ! -z $PROMPTS[prompt_gitea] ]]
+    then
+        pwdinfo="$pwdinfo $PROMPTS[prompt_gitea]"
+    fi
+
     prefix="%F{cyan}%n%F{white}@%F{blue}%m%F{white}:"
-    middle="%F{63}$pwdinfo   %F{243}$PROMPTS[prompt_weather]  $PROMPTS[prompt_commute]"
+    middle="%F{63}$pwdinfo  %F{243}$PROMPTS[prompt_weather]  $PROMPTS[prompt_commute]"
     suffix="%F{white}%(1j. [%F{red}%j%F{white}].)%(?.. (%F{red}%?%F{white}%))$busy
 %F{red}$err$PROMPTS[prompt_grafana_alerts]%(?.%F{77}.%F{red})%(!.❯❯.❯)%f "
 
