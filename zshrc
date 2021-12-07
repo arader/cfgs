@@ -405,7 +405,7 @@ function prompt_grafana_alerts() {
     GRAFANA_KEY=${GRAFANA_KEY:=$(cat ~/.grafana.key)}
     GRAFANA_HOST=${GRAFANA_HOST:=$(cat ~/.grafana.host)}
 
-    curl -s -H "Authorization: Bearer $GRAFANA_KEY" "https://$GRAFANA_HOST/api/alerts?state=alerting" | grep -qv \"id\" || print -n $symbols[ALERTING]
+    curl -s -H "Authorization: Bearer $GRAFANA_KEY" "https://$GRAFANA_HOST/api/alertmanager/grafana/api/v2/alerts?silenced=false&inhibited=false" | grep -qv \"active\" || print -n $symbols[ALERTING]
 }
 
 function queue_prompt_weather() {
