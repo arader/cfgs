@@ -22,6 +22,7 @@ isymbols=(
     GITEA_SUCCESS               '?'
     GITEA_PENDING               '??'
     GITEA_WARNING               '???'
+    GITEA_LOCAL_ONLY            '~?~'
     GITEA_FAILURE               '????'
     ALERTING                    '\uf7d3 '
     WEATHER_CLEAR               '\ue30d  '
@@ -45,7 +46,7 @@ symbols=(
     BUSY2                       '...'
     BUSY3                       ' ..'
     BUSY4                       '  .'
-    BUSY5                       ' . '
+    BUSY5                       '   '
     ERROR                       '!'
     GIT_RM                      'D'
     GIT_MOD                     'M'
@@ -55,6 +56,7 @@ symbols=(
     GITEA_SUCCESS               '=D'
     GITEA_PENDING               '...'
     GITEA_WARNING               '.!.'
+    GITEA_LOCAL_ONLY            '.?.'
     GITEA_FAILURE               '!!!'
     ALERTING                    '!!'
     WEATHER_CLEAR               'CLEAR'
@@ -327,7 +329,7 @@ function queue_prompt_git() {
 }
 
 function prompt_git() {
-    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+    if [[ $(git -C "$1" branch 2>/dev/null) == "" ]]
     then
         return
     fi
@@ -470,7 +472,7 @@ function queue_prompt_gitea() {
 }
 
 function prompt_gitea() {
-    if [[ $(\git -C "$1" branch 2>/dev/null) == "" ]]
+    if [[ $(git -C "$1" branch 2>/dev/null) == "" ]]
     then
         return
     fi
@@ -504,6 +506,9 @@ function prompt_gitea() {
     elif [[ "$commit_status" == '"status":"warning"' ]]
     then
         print -n "%F{yellow}$symbols[GITEA_WARNING]"
+    elif [[ "$json" == "[]" ]]
+    then
+        print -n "%F{yellow}$symbols[GITEA_LOCAL_ONLY]"
     else
         print -n "%F{red}$symbols[GITEA_FAILURE]"
     fi
