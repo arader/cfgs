@@ -9,12 +9,12 @@ temp_sum=0
 i=0
 while [ $i -lt $cpu_count ]
 do
-    i=$(echo "$i + 1" | bc -l)
     temp=$(sysctl -n dev.cpu.$i.temperature 2>/dev/null | sed 's/C$//')
 
     [ "$temp" != "" ] || continue
 
     temp_sum=$(echo "$temp_sum + $temp" | bc -l)
+    i=$(($i + 1))
 done
 
 if [ $temp_sum != 0 ]
