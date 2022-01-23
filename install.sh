@@ -1,5 +1,7 @@
 #!/bin/sh
 
+dep1="git clone https://github.com/VundleVim/Vundle.vim.git $HOME/.vim/bundle/Vundle.vim"
+
 cfg1="zshrc,$HOME/.zshrc"
 cfg2="tmux.conf,$HOME/.tmux.conf"
 cfg3="profile,$HOME/.profile"
@@ -40,6 +42,21 @@ install()
     ln -s -f $path/$file $dest
 }
 
+echo 'installing dependencies'
+
+idx=1
+eval thedep=\$dep$idx
+
+while [ -n "$thedep" ]
+do
+    read -p "run the following? (y/n/q): '$thedep' " REPLY
+    [ "$REPLY" == "y" ] && $($thedep)
+    [ "$REPLY" == "q" ] && exit 0
+
+    idx=`expr $idx + 1`
+    eval thedep=\$dep$idx
+done
+
 echo 'installing cfg files to appropriate locations'
 
 idx=1
@@ -50,8 +67,9 @@ do
     file=$(echo $cfgfiles | cut -d, -f1)
     dest=$(echo $cfgfiles | cut -d, -f2)
 
-    read -p "install $file (y/n)? " REPLY
+    read -p "install $file (y/n/q)? " REPLY
     [ "$REPLY" == "y" ] && install "$file" "$dest"
+    [ "$REPLY" == "q" ] && exit 0
 
     idx=`expr $idx + 1`
     eval cfgfiles=\$cfg$idx
