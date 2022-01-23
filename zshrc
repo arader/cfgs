@@ -474,6 +474,13 @@ function queue_prompt_gitea() {
 function prompt_gitea() {
     if [[ $(git -C "$1" branch 2>/dev/null) == "" ]]
     then
+        # if this isn't a git repo, bail
+        return
+    fi
+
+    if [[ ! -f "$1/.pipeline" ]]
+    then
+        # if this repo doesn't have a pipeline, bail
         return
     fi
 
