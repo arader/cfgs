@@ -32,7 +32,8 @@ install()
 
     if [ -e "$dest" ]
     then
-        read -p "overwrite (y/n)? " overwrite
+	printf "overwrite (y/n)?: "
+        read overwrite
         [ "$overwrite" == "y" ] || return
     else
         echo
@@ -49,7 +50,8 @@ eval thedep=\$dep$idx
 
 while [ -n "$thedep" ]
 do
-    read -p "run the following? (y/n/q): '$thedep' " REPLY
+    printf "run the following? (y/n/q): '$thedep' "
+    read REPLY
     [ "$REPLY" == "y" ] && $($thedep)
     [ "$REPLY" == "q" ] && exit 0
 
@@ -67,7 +69,8 @@ do
     file=$(echo $cfgfiles | cut -d, -f1)
     dest=$(echo $cfgfiles | cut -d, -f2)
 
-    read -p "install $file (y/n/q)? " REPLY
+    printf "install $file (y/n/q)? "
+    read REPLY
     [ "$REPLY" == "y" ] && install "$file" "$dest"
     [ "$REPLY" == "q" ] && exit 0
 
