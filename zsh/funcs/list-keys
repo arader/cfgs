@@ -1,0 +1,1 @@
+gpg --list-keys --with-fingerprint --with-fingerprint --keyid-format 0xlong
